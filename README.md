@@ -35,22 +35,24 @@ Para ejecutar este proyecto, necesitarás las siguientes librerías:
 1. **Clona el repositorio:**
    ```bash
    git clone https://github.com/DarkOverlord689/ClasificacionCancer.git
-
+```
  2. ** Creació de ambiente virtual**
   ```bash
 python -m venv venv
 source venv/bin/activate  # En Linux/macOS
 venv\Scripts\activate  # En Windows
+```
 
 3. **Instalar dependencias**
 ```bash
 pip install -r requirements.txt
+```
 
 4. ** Ejecuta el script principal**
 
 ```bash
 python main.py
-
+```
 
 ## GUI
 
@@ -84,19 +86,19 @@ Para ejecutar este proyecto, necesitarás las siguientes librerías:
 1. **Clona el repositorio:**
    ```bash
    git clone https://github.com/DarkOverlord689/ClasificacionCancer.git
-
+```
  2. ** Creació de ambiente virtual**
   ```bash
 python -m venv venv
 source venv/bin/activate  # En Linux/macOS
 venv\Scripts\activate  # En Windows
-
+```
 3. **Instalar dependencias**
 ```bash
 pip install -r requirements.txt
-
+```
 4. ** Ejecuta el script principal**
 
 ```bash
 python main.py
-
+```
