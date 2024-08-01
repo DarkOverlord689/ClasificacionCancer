@@ -4,7 +4,7 @@ from datetime import datetime
 from PyQt6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QFileDialog, QSplitter, QComboBox, QLabel, QVBoxLayout, QPushButton
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtCore import Qt
-from load_and_predict import load_trained_model, predict, ImagePreprocessor
+from load_and_predict import  predicto, ImagePreprocessor
 from image_viewer import ImageViewer
 from ui_components import create_left_layout, create_right_widget
 
@@ -42,13 +42,13 @@ class MelanomaDetector(QMainWindow):
         main_layout.addWidget(right_widget)
 
         # Actualiza la lista de modelos en el selector
-        self.model_selector.addItems(self.models.keys())
-        self.model_selector.currentIndexChanged.connect(self.load_model)
+        #self.model_selector.addItems(self.models.keys())
+        #self.model_selector.currentIndexChanged.connect(self.load_model)
 
-    def load_model(self):
+    """def load_model(self):
         selected_model = self.model_selector.currentText()
         model_path = self.models[selected_model]
-        self.current_model = load_trained_model(model_path)
+        self.current_model = load_trained_model(model_path)"""
 
     def load_image(self):
         file_name, _ = QFileDialog.getOpenFileName(self, "Seleccionar Imagen", "", "Archivos de Imagen (*.png *.jpg *.bmp)")
@@ -74,9 +74,9 @@ class MelanomaDetector(QMainWindow):
             self.result_text.setText("Por favor, cargue una imagen primero.")
             return
 
-        if not self.current_model:
+        """if not self.current_model:
             self.result_text.setText("Por favor, seleccione un modelo primero.")
-            return
+            return"""
 
         patient_data = {
             "Nombre": self.name_input.text(),
@@ -85,9 +85,9 @@ class MelanomaDetector(QMainWindow):
             "Sexo": self.sex_input.currentText(),
             "Localización": self.location_input.currentText()
         }
-            # Verifica que la imagen cargada es la correcta
+        # Verifica que la imagen cargada es la correcta
         print(f"Analizando imagen: {self.current_image}")
-        result = predict(self.current_model, self.current_image, self.preprocessor)
+        result = predicto(self.current_model, self.current_image, patient_data["Edad"], patient_data["Sexo"], patient_data["Localización"])
 
         # Construye el texto para mostrar los resultados de la predicción
         result_text = f"Análisis completado para {patient_data['Nombre']} (ID: {patient_data['Identificación']}).\n"
