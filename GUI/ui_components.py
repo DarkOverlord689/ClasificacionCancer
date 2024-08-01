@@ -10,7 +10,13 @@ import matplotlib.pyplot as plt
 def create_left_layout(parent):
     layout = QVBoxLayout()
 
+
+
     # Logo y título
+    title_label = QLabel('Clasificador multiclase de Cáncer de piel')
+    title_label.setStyleSheet("font-size: 24px; font-weight: bold;")
+    layout.addWidget(title_label, alignment=Qt.AlignmentFlag.AlignCenter)
+    
     logo_label = QLabel()
     logo_pixmap = QPixmap('logo.png')  # Asegúrate de que 'logo.png' exista en el directorio
     if not logo_pixmap.isNull():
@@ -19,9 +25,7 @@ def create_left_layout(parent):
         logo_label.setText("Logo not found")
     layout.addWidget(logo_label, alignment=Qt.AlignmentFlag.AlignCenter)
 
-    title_label = QLabel('Clasificador multiclase de Cáncer de piel')
-    title_label.setStyleSheet("font-size: 24px; font-weight: bold;")
-    layout.addWidget(title_label, alignment=Qt.AlignmentFlag.AlignCenter)
+  
 
     # Formulario de datos del paciente
     form_layout = QFormLayout()
@@ -47,10 +51,21 @@ def create_left_layout(parent):
 
     # Resto de los componentes
     
-    parent.model_selector = QComboBox()
+    """parent.model_selector = QComboBox()
     layout.addWidget(QLabel("Seleccionar Modelo:"))
-    layout.addWidget(parent.model_selector)
+    layout.addWidget(parent.model_selector)"""
 
+      # Create a horizontal layout for the label and combobox
+    preprocess_layout = QHBoxLayout()
+
+    # Add the label and combobox to the horizontal layout
+    preprocess_layout.addWidget(QLabel("Preprocesamiento:"))
+    parent.preprocess_options = QComboBox()
+    parent.preprocess_options.addItems(["Reducción de ruido", "Ambos"])
+    preprocess_layout.addWidget(parent.preprocess_options)
+
+    # Add the horizontal layout to the main vertical layout
+    layout.addLayout(preprocess_layout)
 
 
     parent.attach_button = QPushButton('Cargar Imagen')
@@ -67,10 +82,7 @@ def create_left_layout(parent):
     layout.addWidget(QLabel("Sensibilidad del modelo:"))
     layout.addWidget(parent.sensitivity_slider)"""""
 
-    parent.preprocess_options = QComboBox()
-    parent.preprocess_options.addItems(["Ninguno", "Reducción de ruido", "Normalización", "Ambos"])
-    layout.addWidget(QLabel("Preprocesamiento:"))
-    layout.addWidget(parent.preprocess_options)
+  
 
     parent.history_button = QPushButton('Ver Historial de Pacientes')
     parent.history_button.clicked.connect(parent.load_patient_history)
