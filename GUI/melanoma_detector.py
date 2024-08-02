@@ -26,6 +26,19 @@ class MelanomaDetector(QMainWindow):
         self.current_image = None
         self.initUI()
 
+    def update_zoom(self, value):
+        if hasattr(self, 'image_viewer'):
+            self.image_viewer.update_zoom(value)
+
+    def update_contrast(self, value):
+        if hasattr(self, 'image_viewer'):
+            self.image_viewer.update_contrast(value)
+
+    def update_brightness(self, value):
+        if hasattr(self, 'image_viewer'):
+            self.image_viewer.update_brightness(value)
+
+
     def initUI(self):
         self.setWindowTitle('Detector de Melanoma Avanzado')
         self.setGeometry(100, 100, 1200, 800)
@@ -103,6 +116,7 @@ class MelanomaDetector(QMainWindow):
         self.result_text.setText(result_text)
 
         self.save_to_csv(patient_data, result['probabilities'])
+
 
 
     def save_to_csv(self, patient_data, probabilities):
