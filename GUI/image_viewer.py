@@ -16,44 +16,23 @@ class ImageViewer(QWidget):
         self.image_label = QLabel(self)
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self.zoom_slider = QSlider(Qt.Orientation.Horizontal)
-        self.zoom_slider.setRange(10, 200)
-        self.zoom_slider.setValue(100)
-        self.zoom_slider.valueChanged.connect(self.update_zoom)
-
-        self.contrast_slider = QSlider(Qt.Orientation.Horizontal)
-        self.contrast_slider.setRange(50, 150)
-        self.contrast_slider.setValue(100)
-        self.contrast_slider.valueChanged.connect(self.update_contrast)
-
-        self.brightness_slider = QSlider(Qt.Orientation.Horizontal)
-        self.brightness_slider.setRange(50, 150)
-        self.brightness_slider.setValue(100)
-        self.brightness_slider.valueChanged.connect(self.update_brightness)
-
         layout = QVBoxLayout(self)
         layout.addWidget(self.image_label)
-        layout.addWidget(QLabel("Zoom:"))
-        layout.addWidget(self.zoom_slider)
-        layout.addWidget(QLabel("Contraste:"))
-        layout.addWidget(self.contrast_slider)
-        layout.addWidget(QLabel("Brillo:"))
-        layout.addWidget(self.brightness_slider)
 
     def set_image(self, pixmap):
         self.image = pixmap
         self.update_image()
 
-    def update_zoom(self):
-        self.zoom_factor = self.zoom_slider.value() / 100
+    def update_zoom(self, value):
+        self.zoom_factor = value / 100
         self.update_image()
 
-    def update_contrast(self):
-        self.contrast = self.contrast_slider.value() / 100
+    def update_contrast(self, value):
+        self.contrast = value / 100
         self.update_image()
 
-    def update_brightness(self):
-        self.brightness = self.brightness_slider.value() / 100
+    def update_brightness(self, value):
+        self.brightness = value / 100
         self.update_image()
 
     def update_image(self):
@@ -87,3 +66,4 @@ class ImageViewer(QWidget):
         pixmap.loadFromData(buffer.data())
 
         self.image_label.setPixmap(pixmap)
+        self.image_label.setFixedSize(pixmap.size())
