@@ -84,12 +84,8 @@ class MelanomaDetector(QMainWindow):
 
     def analyze_image(self):
         if not self.current_image:
-            self.result_text.setText("Por favor, cargue una imagen primero.")
+            self.result_text.setText("<p style='color: red;'>Por favor, cargue una imagen primero.</p>")
             return
-
-        """if not self.current_model:
-            self.result_text.setText("Por favor, seleccione un modelo primero.")
-            return"""
 
         patient_data = {
             "Nombre": self.name_input.text(),
@@ -98,25 +94,42 @@ class MelanomaDetector(QMainWindow):
             "Sexo": self.sex_input.currentText(),
             "Localización": self.location_input.currentText()
         }
+        
         # Verifica que la imagen cargada es la correcta
         print(f"Analizando imagen: {self.current_image}")
         result = predicto(self.current_model, self.current_image, patient_data["Edad"], patient_data["Sexo"], patient_data["Localización"])
 
         # Construye el texto para mostrar los resultados de la predicción
-        result_text = f"Análisis completado para {patient_data['Nombre']} (ID: {patient_data['Identificación']}).\n"
-        result_text += f"Edad: {patient_data['Edad']}, Sexo: {patient_data['Sexo']}, Localización: {patient_data['Localización']}\n\n"
-        result_text += f"Clase predicha: {result['predicted_class']}\n"
-        result_text += "Probabilidades:\n"
+        result_text = f"""
+        <h3>Resultados del Análisis</h3>
+        <p><b>Nombre:</b> {patient_data['Nombre']} <br>
+        <b>Identificación:</b> {patient_data['Identificación']} <br>
+        <b>Edad:</b> {patient_data['Edad']} <br>
+        <b>Sexo:</b> {patient_data['Sexo']} <br>
+        <b>Localización:</b> {patient_data['Localización']}</p>
+        <p><b>Clase predicha:</b> {result['predicted_class']}</p>
+        <h4>Probabilidades:</h4>
+        <ul>
+        """
         
         for class_name, probability in result['probabilities'].items():
-            result_text += f"{class_name}: {probability:.4f}\n"
+            result_text += f"<li><b>{class_name}:</b> {probability:.4f}</li>"
+        
+        result_text += "</ul>"
 
-        result_text += "\n" + ("Se recomienda consultar a un dermatólogo." if result['probabilities']['mel'] > 0.5 else "El riesgo parece bajo, pero consulte a un médico si tiene dudas.")
+    # Encuentra el valor más alto de las probabilidades
+        max_probability = max(result['probabilities'].values())
 
-        self.result_text.setText(result_text)
+        if max_probability > 0.5:
+            recommendation = "<p style='color: red;'><b>Se recomienda consultar a un dermatólogo.</b></p>"
+        else:
+            recommendation = "<p style='color: green;'><b>El riesgo parece bajo, pero consulte a un médico si tiene dudas.</b></p>"
 
+        result_text += recommendation
+
+
+        self.result_text.setHtml(result_text)
         self.save_to_csv(patient_data, result['probabilities'])
-
 
 
     def save_to_csv(self, patient_data, probabilities):
