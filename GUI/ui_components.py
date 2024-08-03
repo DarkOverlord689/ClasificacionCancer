@@ -179,7 +179,7 @@ def create_right_widget(parent):
     results_layout.setSpacing(10)
 
     parent.image_viewer = ImageViewer()
-    parent.image_viewer.setFixedSize(500, 500)
+    parent.image_viewer.setFixedSize(450, 450)
     results_layout.addWidget(parent.image_viewer)
 
     parent.result_text = QTextEdit()
@@ -190,11 +190,11 @@ def create_right_widget(parent):
     results_layout.addWidget(QLabel("Resultado:"))
     results_layout.addWidget(parent.result_text)
 
-    parent.metrics_table = QTableView()
+    """parent.metrics_table = QTableView()
     # CAMBIO: Aplicar estilo al metrics_table
     parent.metrics_table.setStyleSheet("QTableView { border: 1px solid #cccccc; color: black; }")
     results_layout.addWidget(QLabel("Métricas del modelo:"))
-    results_layout.addWidget(parent.metrics_table)
+    results_layout.addWidget(parent.metrics_table)"""
 
     right_widget.addTab(results_tab, "Resultados")
 
