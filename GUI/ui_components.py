@@ -6,6 +6,7 @@ from PyQt6.QtCore import Qt
 from image_viewer import ImageViewer
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
+from PyQt6.QtWidgets import QTableWidget, QTableWidgetItem, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QSlider, QTabWidget, QTextEdit, QListWidget, QTableView, QWidget, QLineEdit, QFormLayout, QScrollArea, QApplication
 
 def create_left_layout(parent):
     layout = QVBoxLayout()
@@ -201,12 +202,11 @@ def create_right_widget(parent):
     # Pestaña de Historial
     history_tab = QWidget()
     history_layout = QVBoxLayout(history_tab)
-    parent.history_list = QListWidget()
-    parent.history_list.setFont(QFont("Arial", 12))
-    parent.history_list.itemClicked.connect(parent.load_from_history)
-    # CAMBIO: Aplicar estilo al history_list
-    parent.history_list.setStyleSheet("QListWidget { color: black; }")
-    history_layout.addWidget(parent.history_list)
+
+    parent.history_table = QTableWidget()
+    parent.history_table.setColumnCount(9)
+    parent.history_table.setHorizontalHeaderLabels(['Fecha', 'Nombre', 'Identificación', 'Edad', 'Sexo', 'Localización', 'Imagen', 'Clase Predicha', 'Probabilidades'])
+    history_layout.addWidget(parent.history_table)
 
     right_widget.addTab(history_tab, "Historial")
 
@@ -216,7 +216,6 @@ def create_right_widget(parent):
     parent.comparison_text = QTextEdit()
     parent.comparison_text.setReadOnly(True)
     parent.comparison_text.setFont(QFont("Arial", 12))
-    # CAMBIO: Aplicar estilo al comparison_text
     parent.comparison_text.setStyleSheet("QTextEdit { color: black; background-color: white; }")
     comparison_layout.addWidget(parent.comparison_text)
 
