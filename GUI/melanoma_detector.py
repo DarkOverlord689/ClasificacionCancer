@@ -7,6 +7,8 @@ from PyQt6.QtCore import Qt
 from load_and_predict import  predicto, ImagePreprocessor
 from image_viewer import ImageViewer
 from ui_components import create_left_layout, create_right_widget
+from PyQt6.QtWidgets import QTableWidgetItem
+
 
 
 class MelanomaDetector(QMainWindow):
@@ -24,6 +26,14 @@ class MelanomaDetector(QMainWindow):
         self.preprocessor = ImagePreprocessor()
         self.image_history = []
         self.current_image = None
+        self.cancer_types = {
+            'mel': 'Melanoma',
+            'nv': 'Nevo',
+            'bcc': 'Carcinoma Basocelular',
+            'akiec': 'Queratosis Actínica',
+            'bkl': 'Queratosis Benigna',
+            'df': 'Dermatofibroma',
+        }
         self.initUI()
 
     def update_zoom(self, value):
@@ -70,17 +80,28 @@ class MelanomaDetector(QMainWindow):
             self.image_viewer.set_image(pixmap)
             self.current_image = file_name
             self.image_history.append(file_name)
-            self.history_list.addItem(os.path.basename(file_name))
 
-              # Limpia los resultados anteriores
-        self.result_text.clear()
-        self.comparison_text.clear()
+            # Guardar el nombre y la probabilidad en la tabla de historial
+           # self.add_to_history_table(os.path.basename(file_name), self.predicted_class, self.prediction_probability)
 
+            # Limpia los resultados anteriores
+            self.result_text.clear()
+            self.comparison_text.clear()
+
+    """def add_to_history_table(self, file_name, predicted_class, probability):
+        row_position = self.history_table.rowCount()
+        self.history_table.insertRow(row_position)
+        self.history_table.setItem(row_position, 0, QTableWidgetItem(file_name))
+        self.history_table.setItem(row_position, 1, QTableWidgetItem(predicted_class))
+        self.history_table.setItem(row_position, 2, QTableWidgetItem(f"{probability:.2f}%"))
+    """
     def load_from_history(self, item):
-        file_name = self.image_history[self.history_list.row(item)]
-        pixmap = QPixmap(file_name)
+        row = item.row()
+        file_name = self.history_table.item(row, 0).text()
+        pixmap = QPixmap(self.image_history[row])
         self.image_viewer.set_image(pixmap)
         self.current_image = file_name
+
 
     def analyze_image(self):
         if not self.current_image:
@@ -94,12 +115,11 @@ class MelanomaDetector(QMainWindow):
             "Sexo": self.sex_input.currentText(),
             "Localización": self.location_input.currentText()
         }
-        
-        # Verifica que la imagen cargada es la correcta
-        print(f"Analizando imagen: {self.current_image}")
+
         result = predicto(self.current_model, self.current_image, patient_data["Edad"], patient_data["Sexo"], patient_data["Localización"])
 
-        # Construye el texto para mostrar los resultados de la predicción
+        # Convertir abreviaciones a nombres completos
+        full_class_name = self.cancer_types.get(result['predicted_class'], result['predicted_class'])
         result_text = f"""
         <h3>Resultados del Análisis</h3>
         <p><b>Nombre:</b> {patient_data['Nombre']} <br>
@@ -107,17 +127,15 @@ class MelanomaDetector(QMainWindow):
         <b>Edad:</b> {patient_data['Edad']} <br>
         <b>Sexo:</b> {patient_data['Sexo']} <br>
         <b>Localización:</b> {patient_data['Localización']}</p>
-        <p><b>Clase predicha:</b> {result['predicted_class']}</p>
+        <p><b>Clase predicha:</b> {full_class_name}</p>
         <h4>Probabilidades:</h4>
         <ul>
         """
-        
         for class_name, probability in result['probabilities'].items():
-            result_text += f"<li><b>{class_name}:</b> {probability:.4f}</li>"
-        
-        result_text += "</ul>"
+            full_name = self.cancer_types.get(class_name, class_name)
+            result_text += f"<li><b>{full_name}:</b> {probability:.4f}</li>"
 
-    # Encuentra el valor más alto de las probabilidades
+        result_text += "</ul>"
         max_probability = max(result['probabilities'].values())
 
         if max_probability > 0.5:
@@ -127,22 +145,22 @@ class MelanomaDetector(QMainWindow):
 
         result_text += recommendation
 
-
         self.result_text.setHtml(result_text)
-        self.save_to_csv(patient_data, result['probabilities'])
+        self.save_to_csv(patient_data, max_probability, full_class_name)
 
 
-    def save_to_csv(self, patient_data, probabilities):
+
+    def save_to_csv(self, patient_data, probabilities, predicted_class):
         csv_file = 'historial_pacientes.csv'
         file_exists = os.path.isfile(csv_file)
-        
+
         with open(csv_file, mode='a', newline='', encoding='utf-8') as file:
-            fieldnames = ['Fecha', 'Nombre', 'Identificación', 'Edad', 'Sexo', 'Localización', 'Imagen', 'Probabilidades']
+            fieldnames = ['Fecha', 'Nombre', 'Identificación', 'Edad', 'Sexo', 'Localización', 'Imagen', 'Clase Predicha', 'Probabilidades']
             writer = csv.DictWriter(file, fieldnames=fieldnames)
-            
+
             if not file_exists:
                 writer.writeheader()
-            
+
             writer.writerow({
                 'Fecha': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 'Nombre': patient_data['Nombre'],
@@ -151,8 +169,24 @@ class MelanomaDetector(QMainWindow):
                 'Sexo': patient_data['Sexo'],
                 'Localización': patient_data['Localización'],
                 'Imagen': self.current_image,
+                'Clase Predicha': predicted_class,
                 'Probabilidades': str(probabilities)
             })
+
+        self.update_patient_history_table()
+
+    def update_patient_history_table(self):
+        self.history_table.setRowCount(0)  # Limpiar la tabla
+
+        csv_file = 'historial_pacientes.csv'
+        if os.path.isfile(csv_file):
+            with open(csv_file, mode='r', encoding='utf-8') as file:
+                reader = csv.DictReader(file)
+                for row in reader:
+                    row_position = self.history_table.rowCount()
+                    self.history_table.insertRow(row_position)
+                    for i, (key, value) in enumerate(row.items()):
+                        self.history_table.setItem(row_position, i, QTableWidgetItem(value))
 
 
     def load_patient_history(self):
