@@ -2,7 +2,7 @@ import os
 import csv
 from datetime import datetime
 from PyQt6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QFileDialog, QSplitter, QComboBox, QLabel, QVBoxLayout, QPushButton
-from PyQt6.QtGui import QPixmap
+from PyQt6.QtGui import QPixmap, QFont
 from PyQt6.QtCore import Qt
 from load_and_predict import  predicto, ImagePreprocessor
 from image_viewer import ImageViewer
@@ -64,6 +64,7 @@ class MelanomaDetector(QMainWindow):
         main_layout.addLayout(left_layout)
         main_layout.addWidget(right_widget)
 
+        
         # Actualiza la lista de modelos en el selector
         #self.model_selector.addItems(self.models.keys())
         #self.model_selector.currentIndexChanged.connect(self.load_model)
@@ -86,7 +87,7 @@ class MelanomaDetector(QMainWindow):
 
             # Limpia los resultados anteriores
             self.result_text.clear()
-            self.comparison_text.clear()
+            #self.comparison_text.clear()
 
     """def add_to_history_table(self, file_name, predicted_class, probability):
         row_position = self.history_table.rowCount()
@@ -102,6 +103,34 @@ class MelanomaDetector(QMainWindow):
         self.image_viewer.set_image(pixmap)
         self.current_image = file_name
 
+
+    def update_comparison_tab(self, images_and_descriptions):
+        # Limpiar el layout actual
+        while self.comparison_layout.count():
+            item = self.comparison_layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+
+        # Añadir nuevas imágenes y descripciones
+        for index, (image_file, description) in enumerate(images_and_descriptions):
+            row = index // 2  # Calcula la fila (0, 1, 2)
+            col = index % 2   # Calcula la columna (0 o 1)
+            
+            # Cargar y mostrar la imagen
+            image_label = QLabel()
+            pixmap = QPixmap(image_file)
+            if not pixmap.isNull():
+                image_label.setPixmap(pixmap.scaled(200, 200, Qt.AspectRatioMode.KeepAspectRatio))
+            else:
+                image_label.setText("Imagen no encontrada")
+            self.comparison_layout.addWidget(image_label, row * 2, col, alignment=Qt.AlignmentFlag.AlignCenter)
+            
+            # Añadir la descripción debajo de la imagen
+            description_label = QLabel(description)
+            description_label.setFont(QFont("Arial", 12))
+            description_label.setWordWrap(True)
+            self.comparison_layout.addWidget(description_label, row * 2 + 1, col, alignment=Qt.AlignmentFlag.AlignCenter)
 
     def analyze_image(self):
         if not self.current_image:
@@ -147,6 +176,18 @@ class MelanomaDetector(QMainWindow):
 
         self.result_text.setHtml(result_text)
         self.save_to_csv(patient_data, max_probability, full_class_name)
+
+        images_and_descriptions = [
+            ('interpretation_DenseNet121.jpg', 'Modelo DenseNet21'),
+            ('interpretation_EfficientNetV2B0.jpg', 'Modelo EfficientNet'),
+            ('interpretation_InceptionV3.jpg', 'Modelo Inception'),
+            ('interpretation_MobileNet.jpg', 'Modelo MobileNet'),
+            ('interpretation_ResNet50.jpg', 'Modelo ResNet50'),
+            ('interpretation_Xception.jpg', 'Modelo Xeption')
+        ]
+
+        # Actualizar la pestaña de comparación
+        self.update_comparison_tab(images_and_descriptions)
 
 
 
