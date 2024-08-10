@@ -7,6 +7,8 @@ from image_viewer import ImageViewer
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
 from PyQt6.QtWidgets import QTableWidget, QTableWidgetItem, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QSlider, QTabWidget, QTextEdit, QListWidget, QTableView, QWidget, QLineEdit, QFormLayout, QScrollArea, QApplication
+from PyQt6.QtWidgets import QGridLayout
+
 
 def create_left_layout(parent):
     layout = QVBoxLayout()
@@ -209,16 +211,15 @@ def create_right_widget(parent):
     history_layout.addWidget(parent.history_table)
 
     right_widget.addTab(history_tab, "Historial")
+    
 
-    # Pestaña de Comparación
+
+
+     # Pestaña de Comparación
     comparison_tab = QWidget()
-    comparison_layout = QVBoxLayout(comparison_tab)
-    parent.comparison_text = QTextEdit()
-    parent.comparison_text.setReadOnly(True)
-    parent.comparison_text.setFont(QFont("Arial", 12))
-    parent.comparison_text.setStyleSheet("QTextEdit { color: black; background-color: white; }")
-    comparison_layout.addWidget(parent.comparison_text)
-
+    parent.comparison_layout = QGridLayout(comparison_tab)  # Guardar el layout como un atributo de la clase principal
+    
+    # Añadir el layout de comparación a la pestaña de comparación
     right_widget.addTab(comparison_tab, "Comparación")
 
     return right_widget
