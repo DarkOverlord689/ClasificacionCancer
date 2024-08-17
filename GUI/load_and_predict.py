@@ -1,3 +1,5 @@
+
+#---------------librerias ----------------------------------------------
 import joblib
 import numpy as np
 from tensorflow.keras.models import load_model, Model
@@ -13,8 +15,22 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 import numpy as np
 
+
+
+"""
+Esta clase maneja el procesamiento de imágenes antes de ser ingresadas a los modelos de redes neuronales
+"""
 class ImagePreprocessor:
     def preprocess_image(self, image_path, size=(224, 224)):
+
+        """
+        Preprocesa una imagen, realiza la eliminación de vello y normalización.
+        Args:
+            image_path (str): Ruta de la imagen a procesar.
+            size (tuple): Tamaño al cual redimensionar la imagen.
+        Returns:
+            np.array: Imagen preprocesada.
+        """
         img = cv2.imread(image_path)
         img = self.remove_hair_enhanced(img)
         img = cv2.resize(img, size)
@@ -22,27 +38,53 @@ class ImagePreprocessor:
         return img
 
     def remove_hair_enhanced(self, img):
-        gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+
+        """
+        Aplica procesamiento de imagen para eliminar vello de las imágenes médicas.
+        Args:
+            img (np.array): Imagen en formato numpy array.
+        Returns:
+            np.array: Imagen con el vello eliminado.
+        """
+        gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)  # Convierte la imagen a escala de grises
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (17, 17))
-        blackhat = cv2.morphologyEx(gray, cv2.MORPH_BLACKHAT, kernel)
-        _, thresh = cv2.threshold(blackhat, 10, 255, cv2.THRESH_BINARY)
+        blackhat = cv2.morphologyEx(gray, cv2.MORPH_BLACKHAT, kernel)  # Detecta sombras del vello
+        _, thresh = cv2.threshold(blackhat, 10, 255, cv2.THRESH_BINARY)  # Genera una máscara binaria del vello
         kernel = np.ones((3, 3), np.uint8)
-        hair_mask = cv2.dilate(thresh, kernel, iterations=1)
-        inpainted_img = cv2.inpaint(img, hair_mask, 3, cv2.INPAINT_TELEA)
-        smooth = cv2.bilateralFilter(inpainted_img, 9, 75, 75)
-        result = cv2.addWeighted(img, 0.7, smooth, 0.3, 0)
+        hair_mask = cv2.dilate(thresh, kernel, iterations=1)  # Dilata la máscara para cubrir áreas de vello
+        inpainted_img = cv2.inpaint(img, hair_mask, 3, cv2.INPAINT_TELEA)  # Restaura la imagen inpaintando el área del vello
+        smooth = cv2.bilateralFilter(inpainted_img, 9, 75, 75)  # Suaviza la imagen resultante
+        result = cv2.addWeighted(img, 0.7, smooth, 0.3, 0)  # Combinación de la imagen suavizada y original
         return result
 
     def normalize_pixel_data(self, img):
-        return img.astype('float32') / 255.0
+        """
+        Normaliza los valores de los píxeles de la imagen entre 0 y 1.
+        Args:
+            img (np.array): Imagen de entrada.
+        Returns:
+            np.array: Imagen normalizada.
+        """
+        return img.astype('float32') / 255.0  # Normaliza dividiendo por 255
+
+
+
+"""Esta clase maneja el flujo de trabajo completo para la predicción, desde el preprocesamiento de imágenes y 
+metadatos hasta la predicción del modelo y la interpretación de los resultados."""
 
 class PredictionSystem:
     def __init__(self, metadata_path):
-        self.metadata_features, self.onehot_encoder_sex, self.onehot_encoder_loc = self.load_metadata(metadata_path)
-        self.meta_clf, self.models = self.load_models()
-        self.feature_extractors = self.create_feature_extractors()
-        self.class_names = ['akiec', 'bcc', 'bkl', 'df', 'mel', 'nv', 'vasc']
-        self.image_preprocessor = ImagePreprocessor()
+        """
+        Constructor del sistema de predicción, inicializa los modelos, clasificadores, y preprocessors.
+        Args:
+            metadata_path (str): Ruta del archivo de metadatos.
+        """
+        self.metadata_features, self.onehot_encoder_sex, self.onehot_encoder_loc = self.load_metadata(metadata_path)  # Carga metadatos
+        self.meta_clf, self.models = self.load_models()  # Carga los modelos entrenados y metaclassifier
+        self.feature_extractors = self.create_feature_extractors()  # Crea extractores de características
+        self.class_names = ['akiec', 'bcc', 'bkl', 'df', 'mel', 'nv', 'vasc']  # Nombres de las clases
+        self.image_preprocessor = ImagePreprocessor()  # Inicializa el preprocesador de imágenes
+        # Umbrales para aplicar en la predicción
         self.thresholds = {
             'akiec': 0.1547,
             'bcc': 0.6412,
@@ -55,14 +97,24 @@ class PredictionSystem:
 
     @staticmethod
     def load_metadata(metadata_path):
-        metadata = pd.read_csv(metadata_path)
+        """
+        Carga y procesa los metadatos para la predicción.
+        Args:
+            metadata_path (str): Ruta del archivo CSV con los metadatos.
+        Returns:
+            tuple: Características de metadatos, codificadores one-hot para sexo y localización.
+        """
+        metadata = pd.read_csv(metadata_path)  # Carga el archivo de metadatos
         
+        # Codificación one-hot de la columna 'sex'
         onehot_encoder_sex = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
         sex_encoded = onehot_encoder_sex.fit_transform(metadata[['sex']])
         
+        # Codificación one-hot de la columna 'localization'
         onehot_encoder_loc = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
         loc_encoded = onehot_encoder_loc.fit_transform(metadata[['localization']])
         
+        # Concatenar las características de edad, sexo y localización
         metadata_features = np.hstack([
             metadata[['age']].values,
             sex_encoded,
@@ -73,6 +125,12 @@ class PredictionSystem:
 
     @staticmethod
     def load_models():
+
+        """
+        Carga los modelos entrenados y el MetaClassifier.
+        Returns:
+            tuple: MetaClassifier y modelos CNN preentrenados.
+        """
         logging.info("Cargando modelos...")
         try:
             meta_clf = joblib.load('ensemble_metaclassifier_final.joblib')
@@ -104,10 +162,22 @@ class PredictionSystem:
             raise
 
     def create_feature_extractors(self):
+        """
+        Crea modelos para la extracción de características a partir de las capas penúltimas de las CNN.
+        Returns:
+            dict: Modelos de extracción de características para cada CNN.
+        """
         return {name: Model(inputs=model.input, outputs=model.layers[-2].output) 
                 for name, model in self.models.items()}
 
     def preprocess_image(self, image_path):
+        """
+        Preprocesa la imagen antes de realizar predicciones.
+        Args:
+            image_path (str): Ruta de la imagen a preprocesar.
+        Returns:
+            np.array: Imagen preprocesada lista para predicción.
+        """
         try:
             img = self.image_preprocessor.preprocess_image(image_path)
             img_array = np.expand_dims(img, axis=0)
@@ -117,15 +187,42 @@ class PredictionSystem:
             raise
 
     def preprocess_metadata(self, age, sex, localization):
+
+        """
+        Preprocesa los metadatos (edad, sexo y localización) para usarlos en la predicción.
+        Args:
+            age (int): Edad del paciente.
+            sex (str): Sexo del paciente.
+            localization (str): Localización de la lesión.
+        Returns:
+            np.array: Metadatos procesados y codificados.
+        """
         metadata = pd.DataFrame({'age': [age], 'sex': [sex], 'localization': [localization]})
         sex_encoded = self.onehot_encoder_sex.transform(metadata[['sex']])
         loc_encoded = self.onehot_encoder_loc.transform(metadata[['localization']])
         return np.hstack([metadata[['age']].values, sex_encoded, loc_encoded]).flatten()
 
     def extract_features(self, img_array):
+        """
+        Extrae las características de la imagen utilizando los modelos de CNN.
+        Args:
+            img_array (np.array): Imagen preprocesada.
+        Returns:
+            np.array: Características extraídas de cada modelo.
+        """
         return np.hstack([extractor.predict(img_array).flatten() for extractor in self.feature_extractors.values()])
 
     def predict(self, model_name, image_path, age, sex, localization):
+        """
+        Realiza la predicción utilizando las características de imagen y metadatos.
+        Args:
+            image_path (str): Ruta de la imagen.
+            age (int): Edad del paciente.
+            sex (str): Sexo del paciente.
+            localization (str): Localización de la lesión.
+        Returns:
+            dict: Predicciones finales de cada clase.
+        """
         try:
             img_array = self.preprocess_image(image_path)
             metadata = self.preprocess_metadata(age, sex, localization)
