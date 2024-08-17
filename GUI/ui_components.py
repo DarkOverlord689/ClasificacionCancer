@@ -13,10 +13,12 @@ from PyQt6.QtCore import Qt
 from image_viewer import ImageViewer
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
-from PyQt6.QtWidgets import QTableWidget, QTableWidgetItem, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QSlider, QTabWidget, QTextEdit, QListWidget, QTableView, QWidget, QLineEdit, QFormLayout, QScrollArea, QApplication
+from PyQt6.QtWidgets import QTableWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QSlider, QTabWidget, QTextEdit, QWidget, QLineEdit, QFormLayout, QScrollArea, QApplication
 from PyQt6.QtWidgets import QGridLayout
+import os
 
-
+# Obtener la ruta del directorio actual (donde se está ejecutando el script)
+current_directory = os.getcwd()
 
 #-----------------------------Componentes-----------------------------------------------------------
 
@@ -56,8 +58,11 @@ def create_left_layout(parent):
     title_label.setFont(title_font)
     layout.addWidget(title_label, alignment=Qt.AlignmentFlag.AlignCenter)
     
+
+    # Crear una ruta relativa desde el directorio actual
+    relative_path = os.path.join(current_directory, 'ConSlogan', 'Color.png')
     logo_label = QLabel()
-    logo_pixmap = QPixmap('C:\\Users\\scantill23\\Documents\\Cancer\\DetectCancer\\gui\\ConSlogan\\B&W Minimalist.png')
+    logo_pixmap = QPixmap(relative_path)
 
     # Este bloque verifica si funciona la ruta donde se almacena el logo para mostrarlo, en caso contrario envia mensaje de alerta
     if not logo_pixmap.isNull():
