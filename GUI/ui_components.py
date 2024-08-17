@@ -1,3 +1,10 @@
+"""
+    Este modulo  crea los componentes de la interface gráfica, la función principal es el módulo melanoma_detector
+    La estructura esta dividida en dos div que almacena los componentes, el vertical y el horizontal 
+
+"""
+
+# --------------------------------Importación de librerias--------------------------------------
 from PyQt6.QtWidgets import (QPushButton, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, 
                              QSlider, QTabWidget, QTextEdit, QListWidget, QTableView, QWidget,
                              QLineEdit, QFormLayout, QScrollArea, QApplication)
@@ -10,8 +17,14 @@ from PyQt6.QtWidgets import QTableWidget, QTableWidgetItem, QVBoxLayout, QHBoxLa
 from PyQt6.QtWidgets import QGridLayout
 
 
+
+#-----------------------------Componentes-----------------------------------------------------------
+
+"""
+Esta función crea el componente izquierdo y crea todos los elementos que están alojados ahí
+"""
 def create_left_layout(parent):
-    layout = QVBoxLayout()
+    layout = QVBoxLayout() # Crea un layout vertical para los widgets.
     layout.setSpacing(15)  # Aumenta el espacio entre widgets
 
     # Estilo general
@@ -25,10 +38,13 @@ def create_left_layout(parent):
     palette.setColor(QPalette.ColorRole.Button, QColor(230, 230, 230))
     palette.setColor(QPalette.ColorRole.ButtonText, QColor(0, 0, 0))
     palette.setColor(QPalette.ColorRole.Base, QColor(255, 255, 255))
+
+    
     # CAMBIO: Añadir colores para texto y placeholder
     palette.setColor(QPalette.ColorRole.Text, QColor(0, 0, 0))
     palette.setColor(QPalette.ColorRole.PlaceholderText, QColor(100, 100, 100))
     app.setPalette(palette)
+
 
     # Fuentes
     title_font = QFont("Arial", 24, QFont.Weight.Bold)
@@ -36,12 +52,14 @@ def create_left_layout(parent):
     button_font = QFont("Arial", 12, QFont.Weight.Bold)
 
     # Logo y título
-    title_label = QLabel('Clasificador multiclase de Cáncer de piel')
+    title_label = QLabel('DermaDetect')
     title_label.setFont(title_font)
     layout.addWidget(title_label, alignment=Qt.AlignmentFlag.AlignCenter)
     
     logo_label = QLabel()
-    logo_pixmap = QPixmap('logo.png')
+    logo_pixmap = QPixmap('C:\\Users\\scantill23\\Documents\\Cancer\\DetectCancer\\gui\\ConSlogan\\B&W Minimalist.png')
+
+    # Este bloque verifica si funciona la ruta donde se almacena el logo para mostrarlo, en caso contrario envia mensaje de alerta
     if not logo_pixmap.isNull():
         logo_label.setPixmap(logo_pixmap.scaled(100, 100, Qt.AspectRatioMode.KeepAspectRatio))
     else:
@@ -54,6 +72,7 @@ def create_left_layout(parent):
     form_layout = QFormLayout(form_widget)
     form_layout.setSpacing(10)
     
+       # Campos del formulario.
     fields = [
         ("Nombre:", "name_input"),
         ("Identificación:", "id_input"),
@@ -62,22 +81,23 @@ def create_left_layout(parent):
         ("Localización:", "location_input", ["Cabeza", "Cuello", "Tronco", "Brazos", "Piernas", "Otro"])
     ]
 
+     # Agregar campos al formulario de datos del paciente.
     for label_text, attr_name, *options in fields:
-        label = QLabel(label_text)
-        label.setFont(label_font)
+        label = QLabel(label_text)  # Crea una etiqueta para el campo.
+        label.setFont(label_font) # Asigna la fuente de las etiquetas.
         
         if options:
-            widget = QComboBox()
+            widget = QComboBox() # Crea un combobox si hay opciones.
             widget.addItems(options[0])
             widget.setFont(label_font)
         else:
-            widget = QLineEdit()
+            widget = QLineEdit() # Crea un campo de texto si no hay opciones.
             widget.setFont(label_font)
         
         setattr(parent, attr_name, widget)
         form_layout.addRow(label, widget)
 
-    # CAMBIO: Aplicar estilo al formulario
+     # Aplicar estilo al formulario de entrada.
     input_style = """
     QLineEdit, QTextEdit, QComboBox {
         color: black;
@@ -90,7 +110,8 @@ def create_left_layout(parent):
 
     layout.addWidget(form_widget)
 
-    # Preprocesamiento
+   
+    # Sección de preprocesamiento.
     preprocess_layout = QHBoxLayout()
     preprocess_label = QLabel("Preprocesamiento:")
     preprocess_label.setFont(label_font)
@@ -125,7 +146,7 @@ def create_left_layout(parent):
         color: #666666;
     }
     """
-    # Añadir herramientas de edición de imagen
+    # Slider de zoom de imagen.
     layout.addWidget(QLabel("Zoom:"))
     parent.zoom_slider = QSlider(Qt.Orientation.Horizontal)
     parent.zoom_slider.setRange(10, 200)
@@ -133,6 +154,7 @@ def create_left_layout(parent):
     parent.zoom_slider.valueChanged.connect(parent.update_zoom)
     layout.addWidget(parent.zoom_slider)
 
+     # Slider de contraste de imagen.
     layout.addWidget(QLabel("Contraste:"))
     parent.contrast_slider = QSlider(Qt.Orientation.Horizontal)
     parent.contrast_slider.setRange(50, 150)
@@ -140,6 +162,8 @@ def create_left_layout(parent):
     parent.contrast_slider.valueChanged.connect(parent.update_contrast)
     layout.addWidget(parent.contrast_slider)
 
+
+    # Slider de brillo de imagen.
     layout.addWidget(QLabel("Brillo:"))
     parent.brightness_slider = QSlider(Qt.Orientation.Horizontal)
     parent.brightness_slider.setRange(50, 150)
@@ -147,7 +171,7 @@ def create_left_layout(parent):
     parent.brightness_slider.valueChanged.connect(parent.update_brightness)
     layout.addWidget(parent.brightness_slider)
 
-    #Cargar imagen 
+    # Botón para cargar una imagen.
     parent.attach_button = QPushButton('Cargar Imagen')
     parent.attach_button.setStyleSheet(button_style)
     parent.attach_button.setFont(button_font)
@@ -155,6 +179,7 @@ def create_left_layout(parent):
     parent.attach_button.setToolTip("Haz clic para cargar una imagen del paciente")
     layout.addWidget(parent.attach_button)
 
+    # Botón para analizar la imagen.
     parent.analyze_button = QPushButton('Analizar Imagen')
     parent.analyze_button.setStyleSheet(button_style)
     parent.analyze_button.setFont(button_font)
@@ -163,6 +188,7 @@ def create_left_layout(parent):
     #parent.analyze_button.setEnabled(False)  # Deshabilitado hasta que se cargue una imagen
     layout.addWidget(parent.analyze_button)
 
+    #Botón de historial
     parent.history_button = QPushButton('Ver Historial de Pacientes')
     parent.history_button.setStyleSheet(button_style)
     parent.history_button.setFont(button_font)
@@ -170,7 +196,13 @@ def create_left_layout(parent):
     parent.history_button.setToolTip("Haz clic para ver el historial de pacientes")
     layout.addWidget(parent.history_button)
 
-    return layout
+    return layout # Devuelve el layout construido.
+
+
+"""
+Esta función crea el componente izquierdo y crea todos los elementos que están alojados ahí
+"""
+
 
 def create_right_widget(parent):
     right_widget = QTabWidget()
@@ -211,9 +243,6 @@ def create_right_widget(parent):
     history_layout.addWidget(parent.history_table)
 
     right_widget.addTab(history_tab, "Historial")
-    
-
-
 
      # Pestaña de Comparación
     comparison_tab = QWidget()
