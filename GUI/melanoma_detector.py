@@ -42,12 +42,10 @@ class MelanomaDetector(QMainWindow):
         self.current_image = None
         # Diccionario para traducir abreviaciones de tipos de cáncer a nombres completos
         self.cancer_types = {
-            'mel': 'Melanoma',
-            'nv': 'Nevo',
-            'bcc': 'Carcinoma Basocelular',
-            'akiec': 'Queratosis Actínica',
-            'bkl': 'Queratosis Benigna',
-            'df': 'Dermatofibroma',
+            'melanoma': 'Melanoma',
+            'basal cell carcinoma': 'Basocelular',
+            'squamous cell carcinoma': 'Escamocelular',
+      
         }
         # Inicializa la interfaz gráfica
         self.initUI()
@@ -177,10 +175,12 @@ class MelanomaDetector(QMainWindow):
             "Identificación": self.id_input.text(),
             "Edad": self.age_input.text(),
             "Sexo": self.sex_input.currentText(),
+            "Tipo_Imagen": self.type_img.currentText(),
+            "categoria":"malignant",
             "Localización": self.location_input.currentText()
         }
         # Llama a la función de predicción del modelo seleccionado
-        result = predicto(self.current_model, self.current_image, patient_data["Edad"], patient_data["Sexo"], patient_data["Localización"])
+        result = predicto(self.current_model, self.current_image, patient_data["Edad"], patient_data["Sexo"] ,patient_data["Localización"])
 
         # Convertir abreviaciones a nombres completos
         full_class_name = self.cancer_types.get(result['predicted_class'], result['predicted_class'])
@@ -191,6 +191,7 @@ class MelanomaDetector(QMainWindow):
         <b>Identificación:</b> {patient_data['Identificación']} <br>
         <b>Edad:</b> {patient_data['Edad']} <br>
         <b>Sexo:</b> {patient_data['Sexo']} <br>
+        <b>Sexo:</b> {patient_data['Tipo_Imagen']} <br>
         <b>Localización:</b> {patient_data['Localización']}</p>
         <p><b>Clase predicha:</b> {full_class_name}</p>
         <h4>Probabilidades:</h4>
