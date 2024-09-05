@@ -1,21 +1,17 @@
-
 #---------------librerias ----------------------------------------------
 import joblib
 import numpy as np
 from tensorflow.keras.models import load_model, Model
-from tensorflow.keras.preprocessing.image import load_img, img_to_array
+from tensorflow.keras.preprocessing.image import img_to_array
 import pandas as pd
 from sklearn.preprocessing import OneHotEncoder
 import logging
 import cv2
 from meta_classifier import MetaClassifier
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
 import tensorflow as tf
 import matplotlib.pyplot as plt
-import numpy as np
 
-
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 """
 Esta clase maneja el procesamiento de imágenes antes de ser ingresadas a los modelos de redes neuronales
@@ -67,8 +63,6 @@ class ImagePreprocessor:
         """
         return img.astype('float32') / 255.0  # Normaliza dividiendo por 255
 
-
-
 """Esta clase maneja el flujo de trabajo completo para la predicción, desde el preprocesamiento de imágenes y 
 metadatos hasta la predicción del modelo y la interpretación de los resultados."""
 
@@ -82,17 +76,13 @@ class PredictionSystem:
         self.metadata_features, self.onehot_encoder_sex, self.onehot_encoder_loc = self.load_metadata(metadata_path)  # Carga metadatos
         self.meta_clf, self.models = self.load_models()  # Carga los modelos entrenados y metaclassifier
         self.feature_extractors = self.create_feature_extractors()  # Crea extractores de características
-        self.class_names = ['akiec', 'bcc', 'bkl', 'df', 'mel', 'nv', 'vasc']  # Nombres de las clases
+        self.class_names = ['basal cell carcinoma', 'melanoma', 'squamous cell carcinoma']  # Nombres de las clases
         self.image_preprocessor = ImagePreprocessor()  # Inicializa el preprocesador de imágenes
         # Umbrales para aplicar en la predicción
         self.thresholds = {
-            'akiec': 0.1547,
-            'bcc': 0.6412,
-            'bkl': 0.3276,
-            'df': 0.3118,
-            'mel': 0.1990,
-            'nv': 0.5325,
-            'vasc': 0.1445
+            'basal cell carcinoma': 0.3111,
+            'melanoma':  0.6740,
+            'squamous cell carcinoma': 0.1676
         }
 
     @staticmethod
@@ -125,7 +115,6 @@ class PredictionSystem:
 
     @staticmethod
     def load_models():
-
         """
         Carga los modelos entrenados y el MetaClassifier.
         Returns:
@@ -138,22 +127,13 @@ class PredictionSystem:
             if not isinstance(meta_clf, MetaClassifier):
                 raise TypeError("El objeto cargado no es una instancia de MetaClassifier")
             
-            """models = {
+            models = {
                 'EfficientNetV2B0': load_model('best_model_EfficientNetV2B0.h5'),
                 'Xception': load_model('best_model_Xception.h5'),
                 'DenseNet121': load_model('best_model_DenseNet121.h5'),
                 'ResNet50': load_model('best_model_ResNet50.h5'),
                 'MobileNet': load_model('best_model_MobileNet.h5'),
                 'InceptionV3': load_model('best_model_InceptionV3.h5')
-            }"""
-
-            models = {
-                'EfficientNetV2B0': load_model('EfficientNetV2B0_cnn_final.h5'),
-                'Xception': load_model('Xception_cnn_final.h5'),
-                'DenseNet121': load_model('DenseNet121_cnn_final.h5'),
-                'ResNet50': load_model('ResNet50_cnn_final.h5'),
-                'MobileNet': load_model('MobileNet_cnn_final.h5'),
-                'InceptionV3': load_model('InceptionV3_cnn_final.h5')
             }
             logging.info("Modelos cargados exitosamente")
             return meta_clf, models
@@ -187,42 +167,40 @@ class PredictionSystem:
             raise
 
     def preprocess_metadata(self, age, sex, localization):
-
-        """
-        Preprocesa los metadatos (edad, sexo y localización) para usarlos en la predicción.
-        Args:
-            age (int): Edad del paciente.
-            sex (str): Sexo del paciente.
-            localization (str): Localización de la lesión.
-        Returns:
-            np.array: Metadatos procesados y codificados.
-        """
-        metadata = pd.DataFrame({'age': [age], 'sex': [sex], 'localization': [localization]})
-        sex_encoded = self.onehot_encoder_sex.transform(metadata[['sex']])
-        loc_encoded = self.onehot_encoder_loc.transform(metadata[['localization']])
-        return np.hstack([metadata[['age']].values, sex_encoded, loc_encoded]).flatten()
+       """
+       Preprocesa los metadatos (edad, sexo y localización) para usarlos en la predicción.
+       Args:
+           age (int): Edad del paciente.
+           sex (str): Sexo del paciente.
+           localization (str): Localización de la lesión.
+       Returns:
+           np.array: Metadatos procesados y codificados.
+       """
+       metadata = pd.DataFrame({'age': [age], 'sex': [sex], 'localization': [localization]})
+       sex_encoded = self.onehot_encoder_sex.transform(metadata[['sex']])
+       loc_encoded = self.onehot_encoder_loc.transform(metadata[['localization']])
+       preprocessed_metadata = np.hstack([metadata[['age']].values, sex_encoded, loc_encoded]).flatten()
+       logging.info(f"Preprocessed metadata shape: {preprocessed_metadata.shape}")
+       return preprocessed_metadata
 
     def extract_features(self, img_array):
-        """
-        Extrae las características de la imagen utilizando los modelos de CNN.
-        Args:
-            img_array (np.array): Imagen preprocesada.
-        Returns:
-            np.array: Características extraídas de cada modelo.
-        """
-        return np.hstack([extractor.predict(img_array).flatten() for extractor in self.feature_extractors.values()])
+       """
+       Extrae las características de la imagen utilizando los modelos de CNN.
+       Args:
+           img_array (np.array): Imagen preprocesada.
+       Returns:
+           np.array: Características extraídas de cada modelo.
+       """
+       features = []
+       for name, extractor in self.feature_extractors.items():
+           feature = extractor.predict(img_array).flatten()
+           logging.info(f"Features extracted from {name}: {feature.shape}")
+           features.append(feature)
+       combined_features = np.hstack(features)
+       logging.info(f"Combined features shape: {combined_features.shape}")
+       return combined_features
 
     def predict(self, model_name, image_path, age, sex, localization):
-        """
-        Realiza la predicción utilizando las características de imagen y metadatos.
-        Args:
-            image_path (str): Ruta de la imagen.
-            age (int): Edad del paciente.
-            sex (str): Sexo del paciente.
-            localization (str): Localización de la lesión.
-        Returns:
-            dict: Predicciones finales de cada clase.
-        """
         try:
             img_array = self.preprocess_image(image_path)
             metadata = self.preprocess_metadata(age, sex, localization)
@@ -232,6 +210,10 @@ class PredictionSystem:
             features = features.reshape(1, -1)
             metadata = metadata.reshape(1, -1)
             
+            logging.info(f"Features shape: {features.shape}")
+            logging.info(f"Metadata shape: {metadata.shape}")
+            
+            # Pass features and metadata separately to predict_proba
             prediction_proba = self.meta_clf.predict_proba(features, metadata)[0]
             
             # Aplicar umbrales
@@ -308,7 +290,7 @@ class PredictionSystem:
     
     
 # Función que será llamada desde el método analyze_image
-def predicto(model_name, image_path, age, sex, localization, metadata_path='HAM10000_metadata.csv'):
+def predicto(model_name, image_path, age, sex, localization, metadata_path='metadatos_T.csv'):
     prediction_system = PredictionSystem(metadata_path)
     result = prediction_system.predict(model_name, image_path, age, sex, localization)
     # Guardar las imágenes de interpretación
@@ -317,4 +299,4 @@ def predicto(model_name, image_path, age, sex, localization, metadata_path='HAM1
     
     # Eliminar las imágenes del resultado para evitar problemas de serialización
     del result['interpretations']
-    return prediction_system.predict(model_name, image_path, age, sex, localization)
+    return result
