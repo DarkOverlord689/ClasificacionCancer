@@ -1,4 +1,4 @@
-isic_id,attribution,copyright_license,acquisition_day,age_approx,anatom_site_general,benign_malignant,clin_size_long_diam_mm,concomitant_biopsy,dermoscopic_type,diagnosis,diagnosis_confirm_type,family_hx_mm,fitzpatrick_skin_type,image_type,lesion_id,mel_class,mel_mitotic_index,mel_thick_mm,mel_type,mel_ulcer,melanocytic,patient_id,personal_hx_mm,sex,tbp_tile_type
+image_id,attribution,copyright_license,acquisition_day,age,localization,benign_malignant,clin_size_long_diam_mm,concomitant_biopsy,dermoscopic_type,dx,diagnosis_confirm_type,family_hx_mm,fitzpatrick_skin_type,image_type,lesion_id,mel_class,mel_mitotic_index,mel_thick_mm,mel_type,mel_ulcer,melanocytic,patient_id,personal_hx_mm,sex,tbp_tile_type
 ISIC_0000002,Anonymous,CC-0,,60.0,upper extremity,malignant,,True,,melanoma,histopathology,,,dermoscopic,,,,,,,True,,,female,
 ISIC_0000004,Anonymous,CC-0,,80.0,posterior torso,malignant,,True,,melanoma,histopathology,,,dermoscopic,,,,,,,True,,,male,
 ISIC_0000013,Anonymous,CC-0,,30.0,posterior torso,malignant,,True,,melanoma,histopathology,,,dermoscopic,,,,,,,True,,,female,
