@@ -83,7 +83,8 @@ def create_left_layout(parent):
         ("Identificación:", "id_input"),
         ("Edad:", "age_input"),
         ("Sexo:", "sex_input", ["Masculino", "Femenino", "Otro"]),
-        ("Localización:", "location_input", ["Cabeza", "Cuello", "Tronco", "Brazos", "Piernas", "Otro"])
+        #("Tipo de Imagen:", "type_img", ["dermoscopic", "TBP tile: close-up", "clinical: overview", "clinical: close-up"]),
+        ("Localización:", "location_input", ["lower extremity", "head/neck", "anterior torso","upper extremity", "posterior torso", "palms/soles", "lateral torso", "oral/genital"])
     ]
 
      # Agregar campos al formulario de datos del paciente.
