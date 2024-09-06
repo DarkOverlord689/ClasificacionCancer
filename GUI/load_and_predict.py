@@ -42,15 +42,24 @@ class ImagePreprocessor:
         Returns:
             np.array: Imagen con el vello eliminado.
         """
-        gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)  # Convierte la imagen a escala de grises
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    
+        # Aplicar la transformada Black Hat
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (17, 17))
-        blackhat = cv2.morphologyEx(gray, cv2.MORPH_BLACKHAT, kernel)  # Detecta sombras del vello
-        _, thresh = cv2.threshold(blackhat, 10, 255, cv2.THRESH_BINARY)  # Genera una máscara binaria del vello
-        kernel = np.ones((3, 3), np.uint8)
-        hair_mask = cv2.dilate(thresh, kernel, iterations=1)  # Dilata la máscara para cubrir áreas de vello
-        inpainted_img = cv2.inpaint(img, hair_mask, 3, cv2.INPAINT_TELEA)  # Restaura la imagen inpaintando el área del vello
-        smooth = cv2.bilateralFilter(inpainted_img, 9, 75, 75)  # Suaviza la imagen resultante
-        result = cv2.addWeighted(img, 0.7, smooth, 0.3, 0)  # Combinación de la imagen suavizada y original
+        blackhat = cv2.morphologyEx(gray, cv2.MORPH_BLACKHAT, kernel)
+        
+        # Intensificar los contornos del vello
+        _, thresh = cv2.threshold(blackhat, 10, 255, cv2.THRESH_BINARY)
+        
+        # Generar una máscara
+        mask = thresh.copy()
+        
+        # Realizar inpainting
+        result = cv2.inpaint(img, mask, 3, cv2.INPAINT_TELEA)
+        
+        # Redimensionar la imagen a 224x224 píxeles
+        result = cv2.resize(result, (224, 224))
+      
         return result
 
     def normalize_pixel_data(self, img):
