@@ -115,7 +115,7 @@ def create_main_layout(parent):
 
     
     # Añadir la pestaña de Resultados al QTabWidget
-    main_widget.addTab(results_tab, "_________________________________________________________________________________________________________________________")
+    main_widget.addTab(results_tab, "                                                                                                                                                                                    ")
    
 
     return main_widget
