@@ -175,7 +175,6 @@ class MelanomaDetector(QMainWindow):
             "Identificación": self.id_input.text(),
             "Edad": self.age_input.text(),
             "Sexo": self.sex_input.currentText(),
-            "Tipo_Imagen": self.type_img.currentText(),
             "categoria":"malignant",
             "Localización": self.location_input.currentText()
         }
@@ -191,7 +190,6 @@ class MelanomaDetector(QMainWindow):
         <b>Identificación:</b> {patient_data['Identificación']} <br>
         <b>Edad:</b> {patient_data['Edad']} <br>
         <b>Sexo:</b> {patient_data['Sexo']} <br>
-        <b>Sexo:</b> {patient_data['Tipo_Imagen']} <br>
         <b>Localización:</b> {patient_data['Localización']}</p>
         <p><b>Clase predicha:</b> {full_class_name}</p>
         <h4>Probabilidades:</h4>
