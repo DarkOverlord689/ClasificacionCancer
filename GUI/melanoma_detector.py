@@ -8,11 +8,36 @@
 import os
 import csv
 from datetime import datetime
-from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QFileDialog, QLabel, QTableWidgetItem, QTableWidget, QApplication, QGridLayout, QTabWidget
+from PyQt6.QtWidgets import QMainWindow, QWidget, QLineEdit, QPushButton, QVBoxLayout, QFileDialog, QLabel, QTableWidgetItem, QTableWidget, QApplication, QGridLayout, QTabWidget
 from PyQt6.QtGui import QPixmap, QFont
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSlot
 from load_and_predict import predicto, ImagePreprocessor
 from ui_components import create_main_layout
+from pdfgenerator import generate_pdf_report
+from PyQt6.QtCore import QFileInfo
+import pandas as pd
+from PyQt6.QtWidgets import QLabel, QVBoxLayout, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QGraphicsItem, QFrame, QWidget, QGridLayout
+from PyQt6.QtGui import QPixmap, QFont, QWheelEvent
+from PyQt6.QtCore import Qt, QRectF
+from PyQt6.QtWidgets import QScrollArea, QSizePolicy
+from PyQt6.QtGui import QPainter
+
+class ZoomableGraphicsView(QGraphicsView):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setRenderHint(QPainter.RenderHint.Antialiasing)
+        self.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+        self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
+        self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
+        self.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
+        self.scale(1, 1)
+
+    def wheelEvent(self, event: QWheelEvent):
+        factor = 1.1
+        if event.angleDelta().y() < 0:
+            factor = 1 / factor
+        self.scale(factor, factor)
+
 
 class MelanomaDetector(QMainWindow):
     def __init__(self):
@@ -70,11 +95,66 @@ class MelanomaDetector(QMainWindow):
         results_layout.addWidget(results_content)
 
     def setup_history_tab(self):
+
+        
+        
+        # Crear el layout principal
         history_layout = QVBoxLayout(self.history_tab)
+        
+        # Crear el campo de búsqueda
+        self.search_box = QLineEdit()
+        self.search_box.setPlaceholderText("Buscar...")
+        self.search_box.textChanged.connect(self.filter_table)
+        
+        # Crear la tabla
         self.history_table = QTableWidget()
         self.history_table.setColumnCount(9)
         self.history_table.setHorizontalHeaderLabels(['Fecha', 'Nombre', 'Identificación', 'Edad', 'Sexo', 'Localización', 'Imagen', 'Clase Predicha', 'Probabilidades'])
+        
+        # Añadir widgets al layout
+        history_layout.addWidget(self.search_box)
         history_layout.addWidget(self.history_table)
+        self.populate_table('historial_pacientes.csv') 
+
+    def filter_table(self):
+        search_text = self.search_box.text().lower()
+        
+        for row in range(self.history_table.rowCount()):
+            match = False
+            for column in range(self.history_table.columnCount()):
+                item = self.history_table.item(row, column)
+                if item and search_text in item.text().lower():
+                    match = True
+                    break
+            self.history_table.setRowHidden(row, not match)
+
+    def populate_table(self, csv_file):
+        # Leer los datos desde el archivo CSV
+        df = pd.read_csv(csv_file)
+        
+        # Configurar el número de filas y columnas de la tabla
+        self.history_table.setRowCount(len(df))
+        self.history_table.setColumnCount(len(df.columns) + 1)  # +1 para la columna de botones
+        
+        # Configurar los encabezados de columna
+        self.history_table.setHorizontalHeaderLabels(list(df.columns) + ['Descargar'])
+        
+        for row in range(len(df)):
+            for column, item in enumerate(df.iloc[row]):
+                table_item = QTableWidgetItem(str(item))
+                self.history_table.setItem(row, column, table_item)
+            
+            # Añadir un botón en la última columna
+            button = QPushButton("Descargar")
+            button.clicked.connect(lambda checked, r=row: self.on_button_click(r))
+            self.history_table.setCellWidget(row, len(df.columns), button)
+
+    @pyqtSlot()
+    def on_button_click(self, row):
+        # Acción a realizar cuando se hace clic en el botón
+        print(f"Botón en la fila {row} clickeado")
+        # Aquí puedes poner la lógica que desees ejecutar
+
 
     def setup_comparison_tab(self):
         comparison_layout = QVBoxLayout(self.comparison_tab)
@@ -105,7 +185,7 @@ class MelanomaDetector(QMainWindow):
             "categoria":"malignant",
             "Localización": self.location_input.currentText()
         }
-        result = predicto(self.current_model, self.current_image, patient_data["Edad"], patient_data["Sexo"], patient_data["Localización"])
+        result = predicto(self.current_model, self.current_image, patient_data["Edad"], patient_data["Sexo"], patient_data["Localización"], metadata_path='metadatos_T.csv')
 
         full_class_name = self.cancer_types.get(result['predicted_class'], result['predicted_class'])
         result_text = f"""
@@ -149,28 +229,85 @@ class MelanomaDetector(QMainWindow):
         ]
 
         self.update_comparison_tab(images_and_descriptions)
+        # Guardar la imagen con el nombre del paciente
+        if self.current_image:
+            
+            # Define el directorio base donde se guardarán las imágenes
+            base_directory = 'ruta/a/tu/directorio/de/imagenes'
+            
+            # Obtener el número de identificación del paciente
+            patient_id = patient_data["Identificación"]
+            
+            # Crear un directorio específico para el paciente
+            save_directory = os.path.join(base_directory, patient_id)
+            if not os.path.exists(save_directory):
+                os.makedirs(save_directory)
+            
+            # Obtener el nombre del archivo original y su extensión
+            file_info = QFileInfo(self.current_image)
+            base_name = file_info.baseName()
+            extension = file_info.suffix()
+            
+            # Definir el nuevo nombre de archivo basado en el nombre del paciente
+            new_file_name = f"{patient_data['Nombre']}.{extension}"
+            new_file_path = os.path.join(save_directory, new_file_name)
+            
+            # Cargar la imagen y guardarla en el nuevo directorio
+            pixmap = QPixmap(self.current_image)
+            pixmap.save(new_file_path)
+        pdf =generate_pdf_report(patient_data, result,new_file_path)
+            # Guardar el PDF
+        with open('reporte_dermatologico.pdf', 'wb') as f:
+            f.write(pdf)
 
     def update_comparison_tab(self, images_and_descriptions):
-        # Limpiar el layout existente
-        for i in reversed(range(self.comparison_grid.count())): 
+            # Limpiar el layout existente
+        for i in reversed(range(self.comparison_grid.count())):
             self.comparison_grid.itemAt(i).widget().setParent(None)
 
-        for index, (image_file, description) in enumerate(images_and_descriptions):
-            row = index // 2
-            col = index % 2
-            
-            image_label = QLabel()
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_widget = QWidget()
+        scroll_layout = QVBoxLayout(scroll_widget)
+
+        for image_file, description in images_and_descriptions:
+            # Crear un widget contenedor para cada imagen y descripción
+            container = QFrame()
+            container.setFrameShape(QFrame.Shape.Box)
+            container.setFrameShadow(QFrame.Shadow.Raised)
+            container.setLineWidth(2)
+            container_layout = QVBoxLayout(container)
+
+            # Crear el visor de gráficos zoomable
+            graphics_view = ZoomableGraphicsView()
+            scene = QGraphicsScene()
             pixmap = QPixmap(image_file)
             if not pixmap.isNull():
-                image_label.setPixmap(pixmap.scaled(200, 200, Qt.AspectRatioMode.KeepAspectRatio))
+                pixmap_item = scene.addPixmap(pixmap)
+                scene.setSceneRect(QRectF(pixmap.rect()))
             else:
-                image_label.setText("Imagen no encontrada")
-            self.comparison_grid.addWidget(image_label, row * 2, col, 1, 1, Qt.AlignmentFlag.AlignCenter)
-            
+                scene.addText("Imagen no encontrada")
+            graphics_view.setScene(scene)
+
+            # Configurar el tamaño del visor
+            graphics_view.setMinimumSize(300, 300)
+            graphics_view.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+
+            # Agregar el visor al contenedor
+            container_layout.addWidget(graphics_view)
+
+            # Agregar la descripción
             description_label = QLabel(description)
             description_label.setFont(QFont("Arial", 12))
             description_label.setWordWrap(True)
-            self.comparison_grid.addWidget(description_label, row * 2 + 1, col, 1, 1, Qt.AlignmentFlag.AlignCenter)
+            description_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            container_layout.addWidget(description_label)
+
+            # Agregar el contenedor al layout principal
+            scroll_layout.addWidget(container)
+
+        scroll_area.setWidget(scroll_widget)
+        self.comparison_grid.addWidget(scroll_area, 0, 0, 1, 1)
 
     def save_to_csv(self, patient_data, probabilities, predicted_class):
         csv_file = 'historial_pacientes.csv'
