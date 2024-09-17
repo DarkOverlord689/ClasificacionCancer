@@ -21,6 +21,7 @@ from PyQt6.QtGui import QPixmap, QFont, QWheelEvent
 from PyQt6.QtCore import Qt, QRectF
 from PyQt6.QtWidgets import QScrollArea, QSizePolicy
 from PyQt6.QtGui import QPainter
+from PyQt6.QtWidgets import QMessageBox
 
 class ZoomableGraphicsView(QGraphicsView):
     def __init__(self, parent=None):
@@ -153,9 +154,41 @@ class MelanomaDetector(QMainWindow):
 
     @pyqtSlot()
     def on_button_click(self, row):
-        # Acción a realizar cuando se hace clic en el botón
-        print(f"Botón en la fila {row} clickeado")
-        # Aquí puedes poner la lógica que desees ejecutar
+        # Obtener los datos de la fila seleccionada
+        patient_data = {
+            'Nombre': self.history_table.item(row, 1).text(),
+            'Identificación': self.history_table.item(row, 2).text(),
+            'Edad': self.history_table.item(row, 3).text(),
+            'Sexo': self.history_table.item(row, 4).text(),
+            'Localización': self.history_table.item(row, 5).text()
+        }
+        result = {
+            'clase_predicha': self.history_table.item(row, 7).text(),
+            'probabilidades': self.history_table.item(row, 8).text()
+        }
+        image_path = self.history_table.item(row, 6).text()
+
+        try:
+            # Comprobar si el archivo de imagen existe
+            if not os.path.isfile(image_path):
+                raise FileNotFoundError(f"No se puede encontrar la imagen en la ruta: {image_path}")
+
+            # Generar el PDF
+            pdf = generate_pdf_report(patient_data, result, image_path)
+
+            # Guardar el PDF
+            pdf_filename = f"reporte_{patient_data['Identificación']}.pdf"
+            with open(pdf_filename, 'wb') as f:
+                f.write(pdf)
+
+            print(f"PDF generado y guardado como {pdf_filename}")
+
+        except FileNotFoundError as e:
+            # Mostrar mensaje de error en PyQt6
+            QMessageBox.critical(self, "Error", str(e))
+        except Exception as e:
+            # Mostrar mensaje de error para otras excepciones
+            QMessageBox.critical(self, "Error", f"Ha ocurrido un error inesperado: {str(e)}")
 
 
     def setup_comparison_tab(self):
