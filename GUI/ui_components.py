@@ -124,7 +124,7 @@ def create_form_widget(parent):
         ("Identificación:", "id_input"),
         ("Edad:", "age_input"),
         ("Sexo:", "sex_input", ["Masculino", "Femenino", "Otro"]),
-        ("Localización:", "location_input", ["lower extremity", "head/neck", "anterior torso", "upper extremity", "posterior torso", "palms/soles", "lateral torso", "oral/genital"])
+        ("Localización:", "location_input", ["Miembro inferior", "Cabeza/cuello", "Tórax anterior", "Miembro superior", "Espalda", "Palmas/plantas", "lateral torso", "Oral/genital"])
     ]
 
     for label_text, attr_name, *options in fields:
