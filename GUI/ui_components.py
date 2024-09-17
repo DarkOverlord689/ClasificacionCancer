@@ -35,16 +35,7 @@ def create_main_layout(parent):
     form_widget = create_form_widget(parent)
     left_layout.addWidget(form_widget)
 
-    # Preprocesamiento
-    preprocess_layout = QHBoxLayout()
-    preprocess_label = QLabel("Preprocesamiento:")
-    preprocess_label.setFont(QFont("Arial", 12))
-    preprocess_layout.addWidget(preprocess_label)
-    parent.preprocess_options = QComboBox()
-    parent.preprocess_options.addItems(["Reducción de ruido", "Ambos"])
-    parent.preprocess_options.setFont(QFont("Arial", 12))
-    preprocess_layout.addWidget(parent.preprocess_options)
-    left_layout.addLayout(preprocess_layout)
+
 
     # Sliders
     for slider_name, label_text in [("zoom_slider", "Zoom:"), ("contrast_slider", "Contraste:"), ("brightness_slider", "Brillo:")]:
