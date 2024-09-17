@@ -84,7 +84,7 @@ def create_main_layout(parent):
     """
     for button_name, button_text, connect_function in [
         ("attach_button", "Cargar Imagen", parent.load_image),
-        ("analyze_button", "Analizar Imagen", parent.analyze_image),
+        ("analyze_button", "Analizar Imagen", parent.analyze_image)
         
     ]:
         button = QPushButton(button_text)
