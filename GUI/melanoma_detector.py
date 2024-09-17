@@ -112,7 +112,7 @@ class MelanomaDetector(QMainWindow):
         # Crear la tabla
         self.history_table = QTableWidget()
         self.history_table.setColumnCount(9)
-        self.history_table.setHorizontalHeaderLabels(['Fecha', 'Nombre', 'Identificación', 'Edad', 'Sexo', 'Localización', 'Imagen', 'Clase Predicha', 'Probabilidades'])
+        self.history_table.setHorizontalHeaderLabels(['Fecha', 'Nombre', 'Identificación', 'Edad', 'Sexo', 'Localización', 'Imagen', 'Clase Predicha', 'Probabilidades', 'result'])
         
         # Añadir widgets al layout
         history_layout.addWidget(self.search_box)
@@ -154,8 +154,8 @@ class MelanomaDetector(QMainWindow):
 
     @pyqtSlot()
     def on_button_click(self, row):
-        self.populate_table('historial_pacientes.csv') 
         # Obtener los datos de la fila seleccionada
+        self.populate_table('historial_pacientes.csv') 
         patient_data = {
             'Nombre': self.history_table.item(row, 1).text(),
             'Identificación': self.history_table.item(row, 2).text(),
@@ -163,12 +163,21 @@ class MelanomaDetector(QMainWindow):
             'Sexo': self.history_table.item(row, 4).text(),
             'Localización': self.history_table.item(row, 5).text()
         }
-        result = {
-            'clase_predicha': self.history_table.item(row, 7).text(),
-            'probabilidades': self.history_table.item(row, 8).text()
-        }
-        image_path = self.history_table.item(row, 6).text()
+        
+        import ast
+        result_item = self.history_table.item(row, 9)
+        if result_item is not None:
+            result_text = result_item.text()
+            try:
+                import ast
+                result = ast.literal_eval(result_text)
+            except:
+                result = {'predicted_class': 'No especificado', 'probabilities': {}}
+        else:
+            result = {'predicted_class': 'No especificado', 'probabilities': {}}
 
+        image_path = self.history_table.item(row, 6).text()
+        print(result)
         try:
             # Comprobar si el archivo de imagen existe
             if not os.path.isfile(image_path):
@@ -222,7 +231,7 @@ class MelanomaDetector(QMainWindow):
             "Localización": self.location_input.currentText()
         }
         result = predicto(self.current_model, self.current_image, patient_data["Edad"], patient_data["Sexo"], patient_data["Localización"], metadata_path='metadatos_T.csv')
-
+        print(type(result))
         full_class_name = self.cancer_types.get(result['predicted_class'], result['predicted_class'])
         result_text = f"""
         <h3>Resultados del Análisis</h3>
@@ -253,7 +262,7 @@ class MelanomaDetector(QMainWindow):
 
         self.result_text.setHtml(result_text)
 
-        self.save_to_csv(patient_data, max_probability, full_class_name)
+        
 
         images_and_descriptions = [
             ('interpretation_DenseNet121.jpg', 'Modelo DenseNet21'),
@@ -269,7 +278,11 @@ class MelanomaDetector(QMainWindow):
         if self.current_image:
             
             # Define el directorio base donde se guardarán las imágenes
-            base_directory = 'ruta/a/tu/directorio/de/imagenes'
+            # Obtener el directorio donde está el script actual
+            script_directory = os.path.dirname(os.path.abspath(__file__))
+
+            # Definir el directorio base relativo al directorio del script
+            base_directory = os.path.join(script_directory, 'datos_paciente')
             
             # Obtener el número de identificación del paciente
             patient_id = patient_data["Identificación"]
@@ -293,8 +306,16 @@ class MelanomaDetector(QMainWindow):
             pixmap.save(new_file_path)
         pdf =generate_pdf_report(patient_data, result,new_file_path)
             # Guardar el PDF
-        with open('reporte_dermatologico.pdf', 'wb') as f:
+        # Definir el nombre del archivo PDF usando el nombre del paciente
+        pdf_file_name = f"{patient_data['Nombre']}_reporte_dermatologico.pdf"
+        pdf_file_path = os.path.join(base_directory, pdf_file_name)
+
+        # Guardar el PDF con el nombre del paciente
+        with open(pdf_file_path, 'wb') as f:
             f.write(pdf)
+        
+        self.save_to_csv(patient_data, max_probability, full_class_name, result)
+        self.populate_table('historial_pacientes.csv') 
 
     def update_comparison_tab(self, images_and_descriptions):
             # Limpiar el layout existente
@@ -349,12 +370,12 @@ class MelanomaDetector(QMainWindow):
         scroll_area.setWidget(scroll_widget)
         self.comparison_grid.addWidget(scroll_area, 0, 0, 1, 1)
 
-    def save_to_csv(self, patient_data, probabilities, predicted_class):
+    def save_to_csv(self, patient_data, probabilities, predicted_class, result):
         csv_file = 'historial_pacientes.csv'
         file_exists = os.path.isfile(csv_file)
 
         with open(csv_file, mode='a', newline='', encoding='utf-8') as file:
-            fieldnames = ['Fecha', 'Nombre', 'Identificación', 'Edad', 'Sexo', 'Localización', 'Imagen', 'Clase Predicha', 'Probabilidades']
+            fieldnames = ['Fecha', 'Nombre', 'Identificación', 'Edad', 'Sexo', 'Localización', 'Imagen', 'Clase Predicha', 'Probabilidades', 'result']
             writer = csv.DictWriter(file, fieldnames=fieldnames)
 
             if not file_exists:
@@ -369,7 +390,9 @@ class MelanomaDetector(QMainWindow):
                 'Localización': patient_data['Localización'],
                 'Imagen': self.current_image,
                 'Clase Predicha': predicted_class,
-                'Probabilidades': str(probabilities)
+                'Probabilidades': str(probabilities),
+                'result': str(result)
+
             })
 
         self.update_patient_history_table()
