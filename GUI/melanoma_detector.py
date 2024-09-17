@@ -154,6 +154,7 @@ class MelanomaDetector(QMainWindow):
 
     @pyqtSlot()
     def on_button_click(self, row):
+        self.populate_table('historial_pacientes.csv') 
         # Obtener los datos de la fila seleccionada
         patient_data = {
             'Nombre': self.history_table.item(row, 1).text(),
@@ -298,14 +299,16 @@ class MelanomaDetector(QMainWindow):
     def update_comparison_tab(self, images_and_descriptions):
             # Limpiar el layout existente
         for i in reversed(range(self.comparison_grid.count())):
-            self.comparison_grid.itemAt(i).widget().setParent(None)
+            widget = self.comparison_grid.itemAt(i).widget()
+            if widget is not None:
+                widget.setParent(None)
 
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
         scroll_widget = QWidget()
-        scroll_layout = QVBoxLayout(scroll_widget)
+        scroll_layout = QGridLayout(scroll_widget)
 
-        for image_file, description in images_and_descriptions:
+        for index, (image_file, description) in enumerate(images_and_descriptions):
             # Crear un widget contenedor para cada imagen y descripción
             container = QFrame()
             container.setFrameShape(QFrame.Shape.Box)
@@ -338,8 +341,10 @@ class MelanomaDetector(QMainWindow):
             description_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             container_layout.addWidget(description_label)
 
-            # Agregar el contenedor al layout principal
-            scroll_layout.addWidget(container)
+            # Agregar el contenedor al layout de cuadrícula
+            row = index // 2
+            col = index % 2
+            scroll_layout.addWidget(container, row, col)
 
         scroll_area.setWidget(scroll_widget)
         self.comparison_grid.addWidget(scroll_area, 0, 0, 1, 1)
