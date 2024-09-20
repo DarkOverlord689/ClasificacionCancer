@@ -4,8 +4,8 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Tabl
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from io import BytesIO
-
-def generate_pdf_report(patient_data, result, new_file_path):
+import os
+def generate_pdf_report(patient_data, result, new_file_path, images_folder, image_names):
     logo_path='ConSlogan/Color.png'
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter)
@@ -80,8 +80,20 @@ def generate_pdf_report(patient_data, result, new_file_path):
     story.append(Spacer(1, 12))
     story.append(Paragraph("Imágenes del Análisis", styles['Heading2']))
     story.append(Spacer(1, 6))
-    # Aquí puedes añadir las imágenes que necesites
+    # Añaade la imagen principal
     story.append(Image(new_file_path, width=6*inch, height=4*inch))
+   
+     # Añadir las imágenes desde la carpeta
+    for image_name in image_names:
+        image_path = os.path.join(images_folder, image_name)
+        if os.path.exists(image_path):
+            story.append(Image(image_path, width=6*inch, height=4*inch))
+            story.append(Spacer(1, 12))  # Espacio después de cada imagen
+        else:
+            story.append(Paragraph(f"Imagen no disponible: {image_name}", styles['Normal']))
+    
+    
+
 
     doc.build(story)
     pdf = buffer.getvalue()
