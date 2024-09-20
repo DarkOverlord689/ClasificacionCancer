@@ -5,9 +5,7 @@ from melanoma_detector import MelanomaDetector
 
 
 
-    """
-    Este script es la función principal y crea una aplicación PyQt para mostrar la interfacce gráfica
-    """
+
 
 class App:
     def __init__(self):
