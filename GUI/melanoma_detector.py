@@ -41,8 +41,9 @@ class ZoomableGraphicsView(QGraphicsView):
 
 
 class MelanomaDetector(QMainWindow):
-    def __init__(self):
+    def __init__(self, user_type):
         super().__init__()
+        self.user_type = user_type
         self.models = {
             'DenseNet': 'best_model_DenseNet121.h5',
             'ResNet': 'best_model_ResNet50.h5',
@@ -82,15 +83,18 @@ class MelanomaDetector(QMainWindow):
 
         # Añadir las pestañas al QTabWidget principal
         
-        self.main_tab_widget.addTab(self.history_tab, "Historial")
+        # Añadir las pestañas al QTabWidget principal
         self.main_tab_widget.addTab(self.results_tab, "Registro")
-        self.main_tab_widget.addTab(self.comparison_tab, "Comparación")
+        if self.user_type == 'admin':
+            self.main_tab_widget.addTab(self.history_tab, "Historial")
+            self.main_tab_widget.addTab(self.comparison_tab, "Comparación")
 
-        # Configurar el contenido de las pestañas
-        
-        self.setup_history_tab()
         self.setup_results_tab()
-        self.setup_comparison_tab()
+        
+        if self.user_type == 'admin':
+            self.setup_history_tab()
+            self.setup_comparison_tab()
+
 
     def setup_results_tab(self):
         results_layout = QVBoxLayout(self.results_tab)
@@ -426,7 +430,7 @@ class MelanomaDetector(QMainWindow):
             self.image_viewer.update_brightness(value)
 
 if __name__ == "__main__":
-    app = QApplication([])
-    window = MelanomaDetector()
-    window.show()
-    app.exec()
+    app = QApplication(sys.argv)
+    login_window = LoginWindow()
+    login_window.show()
+    sys.exit(app.exec())
