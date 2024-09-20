@@ -92,15 +92,15 @@ class MelanomaDetector(QMainWindow):
         self.comparison_tab = QWidget()
 
         # Añadir las pestañas al QTabWidget principal
-        self.main_tab_widget.addTab(self.results_tab, "Registro")
+        self.main_tab_widget.addTab(self.history_tab, "Historial")
         if self.user_type == 'admin':
-            self.main_tab_widget.addTab(self.history_tab, "Historial")
+            self.main_tab_widget.addTab(self.results_tab, "Registro")
             self.main_tab_widget.addTab(self.comparison_tab, "Comparación")
 
-        self.setup_results_tab()
         
+        self.setup_history_tab()
         if self.user_type == 'admin':
-            self.setup_history_tab()
+            self.setup_results_tab()    
             self.setup_comparison_tab()
 
 
