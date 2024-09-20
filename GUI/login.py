@@ -48,8 +48,8 @@ class LoginWindow(QWidget):
         self.password_label.setStyleSheet("font-size: 16px; font-weight: bold; color: #333;")
 
         # Style the input fields
-        self.username_input.setStyleSheet("border: 1px solid #ccc; border-radius: 5px; padding: 8px; font-size: 14px;")
-        self.password_input.setStyleSheet("border: 1px solid #ccc; border-radius: 5px; padding: 8px; font-size: 14px;")
+        self.username_input.setStyleSheet("border: 1px solid #ccc; border-radius: 5px; padding: 8px; font-size: 14px; color: black;")
+        self.password_input.setStyleSheet("border: 1px solid #ccc; border-radius: 5px; padding: 8px; font-size: 14px; color: black;")
 
         # Style the login button
         self.login_button.setStyleSheet("""
