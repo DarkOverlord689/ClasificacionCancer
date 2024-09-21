@@ -80,25 +80,48 @@ def generate_pdf_report(patient_data, result, new_file_path, images_folder, imag
     story.append(Spacer(1, 12))
     story.append(Paragraph("Imágenes del Análisis", styles['Heading2']))
     story.append(Spacer(1, 6))
-    # Añaade la imagen principal
+     # Añaade la imagen principal
     story.append(Image(new_file_path, width=6*inch, height=4*inch))
-   
-     # Añadir las imágenes desde la carpeta
+    # Crear lista para las imágenes y nombres
+    image_elements = []
     for image_name in image_names:
         image_path = os.path.join(images_folder, image_name)
         if os.path.exists(image_path):
-            story.append(Image(image_path, width=6*inch, height=4*inch))
-            story.append(Spacer(1, 12))  # Espacio después de cada imagen
+            img = Image(image_path, width=2.4 * inch, height=2.4 * inch)
+            # Crear una tabla para cada imagen y su nombre
+            image_table = Table([[img], [Paragraph(image_name, styles['Normal'])]], 
+                                colWidths=[2.5 * inch], 
+                                rowHeights=[2.5 * inch, 0.5 * inch])
+            image_table.setStyle(TableStyle([
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ]))
+            image_elements.append(image_table)
         else:
-            story.append(Paragraph(f"Imagen no disponible: {image_name}", styles['Normal']))
-    
-    
+            # Manejo de imagen no disponible
+            image_elements.append(Paragraph(f"Imagen no disponible: {image_name}", styles['Normal']))
 
+    # Crear tabla con dos columnas para las imágenes
+    num_rows = (len(image_elements) + 1) // 2  # Redondear hacia arriba
+    image_grid = []
+    for i in range(0, len(image_elements), 2):
+        row = image_elements[i:i+2]
+        if len(row) < 2:
+            row.append("")  # Añadir una celda vacía si es necesario
+        image_grid.append(row)
+
+    image_table = Table(image_grid, colWidths=[3 * inch, 3 * inch])
+    image_table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+    ]))
+
+    # Añadir la tabla de imágenes a la historia
+    story.append(image_table)
 
     doc.build(story)
     pdf = buffer.getvalue()
     buffer.close()
     return pdf
-
 
    
