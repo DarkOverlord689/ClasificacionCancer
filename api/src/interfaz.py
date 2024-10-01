@@ -169,7 +169,7 @@ class MelanomaDetector(QMainWindow):
         self.initial_data_manager.finished.connect(self.handle_initial_data_response)
 
         # Preparar la solicitud
-        url = QUrl("http://localhost:8000/get_predictions")
+        url = QUrl("https://60ad-38-188-225-57.ngrok-free.app/get_predictions")
         request = QNetworkRequest(url)
 
         # Enviar la solicitud
@@ -317,7 +317,7 @@ class MelanomaDetector(QMainWindow):
         self.network_manager.finished.connect(self.handle_analysis_response)
 
         # Preparar la solicitud
-        url = QUrl("http://localhost:8000/predict")
+        url = QUrl("https://60ad-38-188-225-57.ngrok-free.app/predict")
         request = QNetworkRequest(url)
 
         # Configurar la solicitud para envío multipart
@@ -425,7 +425,7 @@ class MelanomaDetector(QMainWindow):
         self.history_network_manager = QNetworkAccessManager()
         self.history_network_manager.finished.connect(self.handle_history_response)
 
-        url = QUrl("http://localhost:8000/get_predictions")
+        url = QUrl("https://60ad-38-188-225-57.ngrok-free.app/get_predictions")
         request = QNetworkRequest(url)
 
         self.history_network_manager.get(request)
