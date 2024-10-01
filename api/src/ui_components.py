@@ -105,7 +105,7 @@ def create_main_layout(parent):
     right_layout = QVBoxLayout(right_widget)
 
     parent.image_viewer = ImageViewer()
-    parent.image_viewer.setFixedSize(450, 450)
+    parent.image_viewer.setFixedSize(550, 450)
     right_layout.addWidget(parent.image_viewer)
 
     parent.result_text = QTextEdit()
