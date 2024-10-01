@@ -39,12 +39,16 @@ class ImageViewer(QWidget):
         if self.image.isNull():
             return
 
+        # Calcular el tamaño escalado manteniendo la relación de aspecto
+        available_size = self.size()
+        scaled_size = self.image.size().scaled(available_size, Qt.AspectRatioMode.KeepAspectRatio)
+        
         img = self.image.toImage()
         img = img.convertToFormat(QImage.Format.Format_ARGB32)
 
         # Aplicar zoom
-        size = self.image.size() * self.zoom_factor
-        img = img.scaled(size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+        scaled_size *= self.zoom_factor
+        img = img.scaled(scaled_size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
 
         # Convertir QImage a PIL Image para ajustar contraste y brillo
         buffer = QBuffer()
@@ -67,3 +71,7 @@ class ImageViewer(QWidget):
 
         self.image_label.setPixmap(pixmap)
         self.image_label.setFixedSize(pixmap.size())
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.update_image()
