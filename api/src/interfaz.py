@@ -1,5 +1,3 @@
-""" Módulo de funciones, contiene la logica del front """
-
 import os
 from datetime import datetime
 from PyQt6.QtWidgets import QMainWindow, QLineEdit, QWidget, QPushButton,QVBoxLayout, QFileDialog, QLabel, QTableWidgetItem, QTableWidget, QApplication, QGridLayout, QTabWidget
@@ -153,10 +151,10 @@ class MelanomaDetector(QMainWindow):
         
         # Crear la tabla
         self.history_table = QTableWidget()
-        self.history_table.setColumnCount(11)  
+        self.history_table.setColumnCount(12)  
         self.history_table.setHorizontalHeaderLabels([
             'Fecha', 'Nombre', 'Identificación', 'Edad', 'Sexo', 
-            'Localización', 'Tipo de Cáncer', 'Imagen', 'Probabilidades', 'Clase Predicha', 'Descargar'
+            'Localización', 'Tipo de Cáncer', 'Imagen', 'Probabilidades', 'Clase Predicha', 'Observaciones', 'Descargar'
         ])
         
         # Añadir widgets al layout
@@ -217,11 +215,11 @@ class MelanomaDetector(QMainWindow):
             
             # Result (asumiendo que es el mismo que 'predicted_class')
             self.history_table.setItem(row_position, 9, QTableWidgetItem(prediction.get('predicted_class', '')))
-
+            self.history_table.setItem(row_position, 10, QTableWidgetItem(prediction.get('predicted_class', '')))
             # Añadir botón de descarga
             download_button = QPushButton("Descargar PDF")
             download_button.clicked.connect(lambda _, row=row_position: self.on_button_click(row))
-            self.history_table.setCellWidget(row_position, 10, download_button)
+            self.history_table.setCellWidget(row_position, 11, download_button)
 
     def filter_table(self):
         search_text = self.search_box.text().lower()
@@ -272,7 +270,7 @@ class MelanomaDetector(QMainWindow):
             if save_path:
                 # Copiar el archivo PDF a la nueva ubicación
                 shutil.copy(pdf_path, save_path)
-                QMessageBox.information(self, "PDF Copiado", f"PDF copiado y guardado como {save_path}")
+                QMessageBox.information(self, "PDF Generadoiado", f"PDF creado y guardado como {save_path}")
 
         except FileNotFoundError as e:
             QMessageBox.critical(self, "Error", str(e))
@@ -316,7 +314,8 @@ class MelanomaDetector(QMainWindow):
             "identification": self.id_input.text(),
             "age": self.age_input.text(),
             "sex": self.sex_input.currentText(),
-            "localization": self.location_input.currentText()
+            "localization": self.location_input.currentText(),
+            "observacion": self.observation_input.toPlainText()
         }
 
     def send_analysis_request(self, patient_data):
@@ -359,7 +358,8 @@ class MelanomaDetector(QMainWindow):
         if reply.error() == QNetworkReply.NetworkError.NoError:
             result = json.loads(str(reply.readAll(), 'utf-8'))
             
-            
+            # Añadir el campo "observación" desde el formulario
+            result['observacion'] = self.current_patient_data.get('observacion', 'No se proporcionó observación.')
             # Generar directorios y añadir información al resultado
             patient_id = self.current_patient_data['identification']
             diagnosis_date = datetime.now()
@@ -377,7 +377,6 @@ class MelanomaDetector(QMainWindow):
             error_msg = reply.errorString()
             print(f"Error en la solicitud: {error_msg}")
             QMessageBox.critical(self, "Error", f"Error en la red: {error_msg}")
-    
 
 
     def generate_and_save_pdf(self, result):
@@ -470,7 +469,8 @@ class MelanomaDetector(QMainWindow):
         <b>Identificación:</b> {patient_data['identification']} <br>
         <b>Edad:</b> {patient_data['age']} <br>
         <b>Sexo:</b> {patient_data['sex']} <br>
-        <b>Localización:</b> {patient_data['localization']}</p>
+        <b>Localización:</b> {patient_data['localization']} <br>
+        <b>Observación:</b> {patient_data['observacion']}</p>
         <p><b>Clase predicha:</b> {full_class_name}</p>
         <h4>Probabilidades:</h4>
         <ul>
