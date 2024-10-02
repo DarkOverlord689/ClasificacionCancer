@@ -35,7 +35,8 @@ def generate_pdf_report(result, new_file_path, images_folder, image_names):
         ['Identificación:', str(patient_data.get('numero_identificacion', 'No especificado'))],
         ['Edad:', str(patient_data.get('edad', 'No especificado'))],
         ['Sexo:', patient_data.get('sexo', 'No especificado')],
-        ['Localización:', diagnostic_data.get('localizacion', 'No especificado')]
+        ['Localización:', diagnostic_data.get('localizacion', 'No especificado')],
+        ['Observación:', diagnostic_data.get('observacion', 'No especificado')]
     ]
     patient_table = Table(patient_info, colWidths=[2*inch, 4*inch])
     patient_table.setStyle(TableStyle([
