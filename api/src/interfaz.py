@@ -215,7 +215,7 @@ class MelanomaDetector(QMainWindow):
             
             # Result (asumiendo que es el mismo que 'predicted_class')
             self.history_table.setItem(row_position, 9, QTableWidgetItem(prediction.get('predicted_class', '')))
-            self.history_table.setItem(row_position, 10, QTableWidgetItem(prediction.get('predicted_class', '')))
+            self.history_table.setItem(row_position, 10, QTableWidgetItem(str(prediction['diagnostico']['observacion'])))
             # Añadir botón de descarga
             download_button = QPushButton("Descargar PDF")
             download_button.clicked.connect(lambda _, row=row_position: self.on_button_click(row))
