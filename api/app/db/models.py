@@ -26,6 +26,7 @@ class Diagnostico(Base):
     localizacion = Column(String(100))
     tipo_cancer = Column(String(50))
     probabilidades = Column(JSON)  # New column to store probabilities as JSON
+    observacion = Column(String(500))
     fecha_diagnostico = Column(DateTime, default=datetime.utcnow)
 
     paciente = relationship("Paciente", back_populates="diagnosticos")
@@ -35,6 +36,7 @@ class Diagnostico(Base):
         return (f"<Diagnostico(id={self.id}, paciente_id={self.paciente_id}, "
                 f"localizacion='{self.localizacion}', tipo_cancer='{self.tipo_cancer}', "
                 f"probabilidades={self.probabilidades}, "
+                f"observacion='{self.observacion}', "
                 f"fecha_diagnostico='{self.fecha_diagnostico}')>")
 
 class Imagen(Base):
