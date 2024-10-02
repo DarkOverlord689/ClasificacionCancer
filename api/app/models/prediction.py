@@ -23,6 +23,7 @@ class Paciente(PacienteBase):
 class DiagnosticoBase(BaseModel):
     localizacion: str
     tipo_cancer: str
+    observacion: str  
 
 class DiagnosticoCreate(DiagnosticoBase):
     paciente_id: int
@@ -70,7 +71,7 @@ class PredictionInput(BaseModel):
     localization: str
     name: str
     identification: str
-
+    observacion: str  
 class PredictionCreate(BaseModel):
     paciente: PacienteCreate
     diagnostico: DiagnosticoCreate
