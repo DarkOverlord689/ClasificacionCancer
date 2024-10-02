@@ -18,13 +18,20 @@ async def predict(
     sex: str = Form(...),
     localization: str = Form(...),
     name: str = Form(...),
-    identification: str = Form(...)
+    identification: str = Form(...),
+    observacion: str = Form(...)
 ):
-    temp_file = f"temp_{file.filename}"
-    with open(temp_file, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
     try:
+        # Define un directorio para guardar los archivos de manera persistente
+        permanent_dir = os.path.join("datos_paciente", identification)
+        os.makedirs(permanent_dir, exist_ok=True)
+        
+        # Ruta final para guardar la imagen
+        permanent_file = os.path.join(permanent_dir, file.filename)
+
+        with open(permanent_file, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
         patient_data = {
             "nombre": name,
             "numero_identificacion": identification,
@@ -34,12 +41,14 @@ async def predict(
 
         result = predicto(
             "ensemble",
-            temp_file,
+            permanent_file,
             age,
             sex,
-            localization
+            localization,
+            identification
         )
-        print(result['probabilities'])
+        print(f"Probabilidades: {result['probabilities']}")
+
         db: Session = next(get_db())
         paciente = create_paciente(db, PacienteCreate(**patient_data))
         
@@ -47,12 +56,13 @@ async def predict(
             "localizacion": localization,
             "tipo_cancer": result['predicted_class'],
             "probabilidades": result['probabilities'],  
+            "observacion": observacion, 
             "paciente_id": paciente.id
         }
         diagnostico = create_diagnostico(db, DiagnosticoCreate(**diagnostico_data))
 
         imagen_data = {
-            "ruta_imagen": temp_file,
+            "ruta_imagen": permanent_file,
             "tipo_imagen": file.content_type,
             "diagnostico_id": diagnostico.id
         }
@@ -65,8 +75,17 @@ async def predict(
             predicted_class=result['predicted_class'],
             probabilities=result['probabilities']
         )
+    except ValueError as ve:
+        raise HTTPException(status_code=422, detail=f"Error de validación: {str(ve)}")
+    except TypeError as te:
+        raise HTTPException(status_code=422, detail=f"Error de tipo de datos: {str(te)}")
+    except KeyError as ke:
+        raise HTTPException(status_code=422, detail=f"Campo faltante: {str(ke)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error interno del servidor: {str(e)}")
     finally:
-        os.remove(temp_file)
+        if 'permanent_file' in locals() and os.path.exists(permanent_file):
+            os.remove(permanent_file)
 
 @router.post("/create_prediction", response_model=PredictionOutput)
 def create_prediction(prediction: PredictionCreate, db: Session = Depends(get_db)):
