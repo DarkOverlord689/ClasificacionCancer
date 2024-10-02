@@ -1,9 +1,10 @@
+""" Módulo de funciones, contiene la logica del front """
+
 import os
 from datetime import datetime
 from PyQt6.QtWidgets import QMainWindow, QLineEdit, QWidget, QPushButton,QVBoxLayout, QFileDialog, QLabel, QTableWidgetItem, QTableWidget, QApplication, QGridLayout, QTabWidget
 from PyQt6.QtGui import QPixmap, QFont
 from PyQt6.QtCore import Qt, pyqtSlot, QFile
-from load_and_predict import predicto, ImagePreprocessor
 from ui_components import create_main_layout
 from PyQt6.QtCore import QUrl
 from PyQt6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply, QHttpMultiPart, QHttpPart
@@ -22,7 +23,10 @@ import sys
 from pdfgenerator import generate_pdf_report
 from login import LoginWindow
 import ast
-
+from utils import get_patient_directory, get_interpretation_directory
+import os
+import shutil
+import re
 
 class ZoomableGraphicsView(QGraphicsView):
     def __init__(self, parent=None):
@@ -78,7 +82,6 @@ class MelanomaDetector(QMainWindow):
         ]
 
         self.current_model = None
-        self.preprocessor = ImagePreprocessor()
         self.image_history = []
         self.current_image = None
         self.cancer_types = {
@@ -163,13 +166,16 @@ class MelanomaDetector(QMainWindow):
         # Cargar los datos iniciales
         self.load_initial_data()
 
+    
+
+
     def load_initial_data(self):
         # Crear un QNetworkAccessManager para la solicitud
         self.initial_data_manager = QNetworkAccessManager()
         self.initial_data_manager.finished.connect(self.handle_initial_data_response)
 
         # Preparar la solicitud
-        url = QUrl("https://60ad-38-188-225-57.ngrok-free.app/get_predictions")
+        url = QUrl("http://localhost:8000/get_predictions")
         request = QNetworkRequest(url)
 
         # Enviar la solicitud
@@ -228,54 +234,53 @@ class MelanomaDetector(QMainWindow):
                 self.history_table.setRowHidden(row, True)
 
     @pyqtSlot()
-    def on_button_click(self, row):
-        # obtiene los datos de la fila seleccionada
-        patient_data = {
-            'name': self.history_table.item(row, 1).text(),
-            'identification': self.history_table.item(row, 2).text(),
-            'age': self.history_table.item(row, 3).text(),
-            'sex': self.history_table.item(row, 4).text(),
-            'localization': self.history_table.item(row, 5).text()
-        }
-        
-        result_item = self.history_table.item(row, 9)
-        if result_item is not None:
-            result_text = result_item.text()
-            try:
-                result = ast.literal_eval(result_text)
-            except:
-                result = {'predicted_class': 'No especificado', 'probabilities': {}}
-        else:
-            result = {'predicted_class': 'No especificado', 'probabilities': {}}
+    def on_button_click(self, row): 
 
-        image_path = self.history_table.item(row, 7).text()
-        print(image_path)
-        
+        """ Esta función se encarga de descargar los pdf cuando se pulsa el botón en la tabla
+         de historial """
+
+        patient_identification = self.history_table.item(row, 2).text()  # Número de cédula del paciente
+        pdf_folder = os.path.join('datos_paciente', patient_identification)  # Ruta a la carpeta del paciente
+
         try:
-            # Comprobar si el archivo de imagen existe
-            if not os.path.isfile(image_path):
-                raise FileNotFoundError(f"No se puede encontrar la imagen en la ruta: {image_path}")
+            # Listar subcarpetas en pdf_folder
+            subfolders = [f for f in os.listdir(pdf_folder) if os.path.isdir(os.path.join(pdf_folder, f))]
 
-            # Obtener el directorio de imágenes
-            images_folder = os.path.dirname(image_path)  # Carpeta donde se encuentra la imagen principal
+            if not subfolders:
+                raise FileNotFoundError(f"No se encontraron subcarpetas en: {pdf_folder}")
 
-            # Suponiendo que las imágenes de comparación están en el mismo directorio
-            image_names = [img[0] for img in self.images_and_descriptions]  # Obtener solo los nombres de las imágenes de comparación
+            # Usar la primera subcarpeta encontrada
+            subfolder = os.path.join(pdf_folder, subfolders[0])
 
-            # Generar el PDF
-            pdf = generate_pdf_report(patient_data, result, image_path, images_folder, image_names)
+            # Buscar el archivo PDF con el formato especificado
+            pdf_pattern = re.compile(rf"reporte_dermatologico_\d{{4}}-\d{{2}}-\d{{2}}_\d{{2}}-\d{{2}}-\d{{2}}\.pdf")
+            pdf_file = None
 
-            # Guardar el PDF
-            pdf_filename = f"reporte_{patient_data['identification']}.pdf"
-            with open(pdf_filename, 'wb') as f:
-                f.write(pdf)
+            for file in os.listdir(subfolder):
+                if pdf_pattern.match(file):
+                    pdf_file = file
+                    break
 
-            QMessageBox.information(self, "PDF Generado", f"PDF generado y guardado como {pdf_filename}")
+            if pdf_file is None:
+                raise FileNotFoundError(f"No se encontró un archivo PDF con el formato esperado en: {subfolder}")
+
+            pdf_path = os.path.join(subfolder, pdf_file)  # Ruta completa del PDF a buscar
+
+            # Abrir un cuadro de diálogo para elegir la ubicación de guardado
+            save_path, _ = QFileDialog.getSaveFileName(self, "Guardar PDF", "", "PDF Files (*.pdf);;All Files (*)")
+
+            if save_path:
+                # Copiar el archivo PDF a la nueva ubicación
+                shutil.copy(pdf_path, save_path)
+                QMessageBox.information(self, "PDF Copiado", f"PDF copiado y guardado como {save_path}")
 
         except FileNotFoundError as e:
             QMessageBox.critical(self, "Error", str(e))
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Ha ocurrido un error inesperado: {str(e)}")
+
+
+
 
     def setup_comparison_tab(self):
         comparison_layout = QVBoxLayout(self.comparison_tab)
@@ -284,16 +289,19 @@ class MelanomaDetector(QMainWindow):
         comparison_widget.setLayout(self.comparison_grid)
         comparison_layout.addWidget(comparison_widget)
 
+    
+
     def load_image(self):
         file_name, _ = QFileDialog.getOpenFileName(self, "Seleccionar Imagen", "", "Archivos de Imagen (*.png *.jpg *.bmp)")
         if file_name:
+            self.current_image = file_name
             pixmap = QPixmap(file_name)
             self.image_viewer.set_image(pixmap)
-            self.image_viewer.zoom_factor = 1  # Asegúrate de que el zoom sea 100%
-            self.image_viewer.update_image()  # Actualiza la visualización sin zoom
-            self.current_image = file_name
+            self.image_viewer.zoom_factor = 1
+            self.image_viewer.update_image()
             self.image_history.append(file_name)
             self.result_text.clear()
+
     def analyze_image(self):
         if not self.current_image:
             self.result_text.setText("<p style='color: red;'>Por favor, cargue una imagen primero.</p>")
@@ -312,22 +320,18 @@ class MelanomaDetector(QMainWindow):
         }
 
     def send_analysis_request(self, patient_data):
-        # Crear un QNetworkAccessManager
         self.network_manager = QNetworkAccessManager()
         self.network_manager.finished.connect(self.handle_analysis_response)
 
-        # Preparar la solicitud
-        url = QUrl("https://60ad-38-188-225-57.ngrok-free.app/predict")
+        url = QUrl("http://localhost:8000/predict")
         request = QNetworkRequest(url)
 
-        # Configurar la solicitud para envío multipart
         multipart = QHttpMultiPart(QHttpMultiPart.ContentType.FormDataType)
 
-        # Añadir los campos de texto
         for key, value in patient_data.items():
             text_part = QHttpPart()
             text_part.setHeader(QNetworkRequest.KnownHeaders.ContentDispositionHeader, f'form-data; name="{key}"')
-            text_part.setBody(value.encode())
+            text_part.setBody(str(value).encode())  
             multipart.append(text_part)
 
         # Añadir la imagen
@@ -339,80 +343,80 @@ class MelanomaDetector(QMainWindow):
             QMessageBox.critical(self, "Error", f"No se pudo abrir la imagen: {self.current_image}")
             return
         
-        image.open(QIODevice.OpenModeFlag.ReadOnly)
         image_part.setBodyDevice(image)
-        image.setParent(multipart)  # QHttpMultiPart will delete the file with itself
+        image.setParent(multipart)
         multipart.append(image_part)
 
-        # Enviar la solicitud
         reply = self.network_manager.post(request, multipart)
-        multipart.setParent(reply)  # QNetworkReply will delete the multipart with itself
-        
+        multipart.setParent(reply)
+
+        # Guardar patient_data para usarlo en handle_analysis_response
+        self.current_patient_data = patient_data
+            
        
 
     def handle_analysis_response(self, reply):
         if reply.error() == QNetworkReply.NetworkError.NoError:
             result = json.loads(str(reply.readAll(), 'utf-8'))
-            print("Respuesta del servidor:", result)
-            patient_data = self.get_patient_data()
-            print(patient_data)
-            self.display_result(result, patient_data)
+            
+            
+            # Generar directorios y añadir información al resultado
+            patient_id = self.current_patient_data['identification']
+            diagnosis_date = datetime.now()
+            patient_dir = get_patient_directory(patient_id, diagnosis_date)
+            interpretation_dir = get_interpretation_directory(patient_id, diagnosis_date)
+            
+            result['patient_dir'] = patient_dir
+            result['interpretation_dir'] = interpretation_dir
+            result['diagnosis_date'] = diagnosis_date.strftime("%Y-%m-%d %H:%M:%S")
+            
+            self.display_result(result, self.current_patient_data)
             self.generate_and_save_pdf(result)
             self.load_initial_data()
         else:
             error_msg = reply.errorString()
             print(f"Error en la solicitud: {error_msg}")
             QMessageBox.critical(self, "Error", f"Error en la red: {error_msg}")
+    
+
 
     def generate_and_save_pdf(self, result):
-        patient_data = result['paciente']
-        diagnostic_data = result['diagnostico']
-        image_data = result['imagen']
-        
+        patient_dir = result['patient_dir']
+        interpretation_dir = result['interpretation_dir']
+
+        os.makedirs(patient_dir, exist_ok=True)
+
         if self.current_image:
-            script_directory = os.path.dirname(os.path.abspath(__file__))
-            base_directory = os.path.join(script_directory, 'datos_paciente')
-            patient_id = str(patient_data["numero_identificacion"])
-            save_directory = os.path.join(base_directory, patient_id)
-            
-            if not os.path.exists(save_directory):
-                os.makedirs(save_directory)
-            
-            # Guardar la imagen del paciente
+            # Copiar la imagen original del paciente
             file_info = QFileInfo(self.current_image)
             extension = file_info.suffix()
-            new_file_name = f"{patient_data['nombre']}.{extension}"
-            new_file_path = os.path.join(save_directory, new_file_name)
-            
-            pixmap = QPixmap(self.current_image)
-            pixmap.save(new_file_path)
-            
-            # Guardar imágenes de comparación
-            image_names = []
-            for image_file, description in self.images_and_descriptions:
-                image_path = os.path.join(script_directory, image_file)
-                if os.path.exists(image_path):
-                    comparison_pixmap = QPixmap(image_path)
-                    comparison_image_path = os.path.join(save_directory, image_file)
-                    comparison_pixmap.save(comparison_image_path)
-                    image_names.append(image_file)
-            
+            new_file_name = f"original_image.{extension}"
+            new_file_path = os.path.join(patient_dir, new_file_name)
+            QFile.copy(self.current_image, new_file_path)
+
             # Generar el PDF
             try:
-                pdf = generate_pdf_report(result, new_file_path, save_directory, image_names)
+                # Reúne las imágenes de interpretación
+                interpretation_images = [os.path.join(interpretation_dir, filename) for filename in os.listdir(interpretation_dir) if filename.endswith('.jpg')]
                 
+                # Llamar a la función para generar el PDF, pasando las imágenes de interpretación
+                pdf = generate_pdf_report(result, new_file_path, patient_dir, interpretation_images)
+
                 # Guardar el PDF
-                pdf_file_name = f"{patient_data['nombre']}_reporte_dermatologico.pdf"
-                pdf_file_path = os.path.join(base_directory, pdf_file_name)
-                
+                diagnosis_date_str = result['diagnosis_date'].replace(':', '-').replace(' ', '_')
+                pdf_file_name = f"reporte_dermatologico_{diagnosis_date_str}.pdf"
+                pdf_file_path = os.path.join(patient_dir, pdf_file_name)
+
                 with open(pdf_file_path, 'wb') as f:
                     f.write(pdf)
-                
+
                 QMessageBox.information(self, "PDF Generado", f"Se ha generado el reporte PDF: {pdf_file_path}")
             except Exception as e:
                 QMessageBox.warning(self, "Error", f"No se pudo generar el PDF: {str(e)}")
         else:
             QMessageBox.warning(self, "Error", "No se ha cargado ninguna imagen para el análisis.")
+
+
 
 
     def save_to_database(self):
@@ -425,7 +429,7 @@ class MelanomaDetector(QMainWindow):
         self.history_network_manager = QNetworkAccessManager()
         self.history_network_manager.finished.connect(self.handle_history_response)
 
-        url = QUrl("https://60ad-38-188-225-57.ngrok-free.app/get_predictions")
+        url = QUrl("http://localhost:8000/get_predictions")
         request = QNetworkRequest(url)
 
         self.history_network_manager.get(request)
