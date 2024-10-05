@@ -1,0 +1,10 @@
+version: "3"
+
+services:
+  fastapi:
+    image: image-fastapi
+    build: 
+      context: .  # Asegúrate de especificar el contexto de construcción
+    container_name: fastapi-application
+    ports:
+      - "8000:8000"  # Corrige la lista de puertos
