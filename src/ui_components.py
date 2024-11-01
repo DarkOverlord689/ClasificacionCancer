@@ -139,7 +139,7 @@ def create_form_widget(parent):
         ("Nombre:", "name_input"),
         ("Identificación:", "id_input"),
         ("Edad:", "age_input"),
-        ("Sexo:", "sex_input", ["Masculino", "Femenino", "Otro"]),
+        ("Sexo:", "sex_input", ["Masculino", "Femenino"]),
         ("Localización:", "location_input", ["Miembro inferior", "Cabeza/cuello", "Tórax anterior", "Miembro superior", "Espalda", "Palmas/plantas", "lateral torso", "Oral/genital"]),
         ("Observaciones:", "observation_input")
     ]
@@ -164,10 +164,12 @@ def create_form_widget(parent):
                 # Validator para edad (0-99)
                 validator = QIntValidator(0, 99)
                 widget.setValidator(validator)
+                widget.setPlaceholderText("Ingrese edad de 0 a99 ")  # Texto de ayuda
             elif label_text == "Identificación:":
-                # Validator para identificación (números enteros positivos, hasta 7 dígitos)
-                validator = QIntValidator(0, 9999999)
+                # Validator para identificación (números entre 7 y 8 dígitos)
+                validator = QRegularExpressionValidator(QRegularExpression("^[0-9]{7,8}$"))
                 widget.setValidator(validator)
+                widget.setPlaceholderText("Ingrese 7-8 dígitos")  # Texto de ayuda
             elif label_text == "Nombre:":
                 # Validator para nombre (solo letras)
                 regex = QRegularExpression("^[A-Za-záéíóúñÁÉÍÓÚÑ ]+$")  # Permite letras y espacios
