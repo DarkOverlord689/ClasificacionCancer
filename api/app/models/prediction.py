@@ -1,7 +1,8 @@
 # app/models/prediction.py
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import List, Dict, Any, Optional
+
 
 class PacienteBase(BaseModel):
     nombre: str
@@ -77,3 +78,9 @@ class PredictionCreate(BaseModel):
     diagnostico: DiagnosticoCreate
     imagen: ImagenCreate
     prediction_output: PredictionOutput
+
+class PDFGenerationRequest(BaseModel):
+    result: PredictionOutput  
+    patient_dir: str
+    diagnosis_date: str
+    original_image_path: str
